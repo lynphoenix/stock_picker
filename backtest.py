@@ -449,7 +449,8 @@ def main():
     # Load scientifically screened stock pools
     print("\nLoading scientific stock pools...")
     import json
-    pools_path = "C:/Users/lin/stock_picker/data/stock_pools.json"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    pools_path = os.path.join(script_dir, "data", "stock_pools.json")
 
     with open(pools_path, "r", encoding="utf-8") as f:
         pools = json.load(f)
