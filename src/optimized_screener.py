@@ -23,17 +23,13 @@ class OptimizedStockScreener:
         "软件开发", "互联网服务", "IT服务"
     ]
 
-    # 目标概念板块（作为数据源）
-    TARGET_SECTORS = {
-        "AI软件": ["人工智能", "AIGC", "ChatGPT"],
-        "半导体": ["半导体", "芯片"],
-        "机器人": ["机器人", "工业母机"],
-    }
-
-    # 缓存目录
-    CACHE_DIR = "C:/Users/lin/stock_picker/data/cache"
+    # 目标概念板块（作为数据源）- 从config导入
+    # 如果需要自定义，可以在这里覆盖
+    TARGET_SECTORS = config.TARGET_SECTORS
 
     def __init__(self):
+        # 缓存目录 - 使用config中的配置
+        self.CACHE_DIR = config.CACHE_DIR
         os.makedirs(self.CACHE_DIR, exist_ok=True)
         self.info_cache = self._load_cache("stock_info_cache.pkl")
 
@@ -199,7 +195,7 @@ class OptimizedStockScreener:
             output_path: 输出文件路径
         """
         if output_path is None:
-            output_path = "C:/Users/lin/stock_picker/data/stock_pools.json"
+            output_path = os.path.join(config.DATA_DIR, "stock_pools.json")
 
         all_pools = {}
 

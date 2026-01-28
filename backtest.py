@@ -449,7 +449,12 @@ def main():
     # Load scientifically screened stock pools
     print("\nLoading scientific stock pools...")
     import json
-    pools_path = "C:/Users/lin/stock_picker/data/stock_pools.json"
+    pools_path = os.path.join(config.DATA_DIR, "stock_pools.json")
+
+    if not os.path.exists(pools_path):
+        print(f"Error: Stock pools file not found at {pools_path}")
+        print("Please run: python src/optimized_screener.py")
+        return
 
     with open(pools_path, "r", encoding="utf-8") as f:
         pools = json.load(f)

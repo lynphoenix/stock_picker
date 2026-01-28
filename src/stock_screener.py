@@ -292,8 +292,9 @@ def main():
     # 保存结果
     if result:
         import json
+        import config
         pools = {"AI应用_" + str(len(result)): [s["code"] for s in result]}
-        path = "C:/Users/lin/stock_picker/data/stock_pools.json"
+        path = os.path.join(config.DATA_DIR, "stock_pools.json")
 
         with open(path, "w", encoding="utf-8") as f:
             json.dump(pools, f, ensure_ascii=False, indent=2)
