@@ -39,9 +39,13 @@ desktop.ini
 
 # Project specific
 data/cache/
+data/cache_old/
+data/backtest_results/
 *.pkl
 data/*.csv
 data/*.txt
+data/*.json
+data/*.log
 
 # But keep stock pools
 !data/stock_pools.json

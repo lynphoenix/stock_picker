@@ -24,6 +24,7 @@ class LimitUpPullbackStrategy(BaseStrategy):
         MA_PERIOD: 均线周期
         VOLUME_RATIO: 放量倍数
         MA_TOLERANCE: 价格偏离MA的容忍度
+        USE_MACD: 是否使用MACD月线金叉条件
     """
 
     # 策略参数
@@ -32,6 +33,7 @@ class LimitUpPullbackStrategy(BaseStrategy):
     MA_PERIOD = 20
     VOLUME_RATIO = 1.5
     MA_TOLERANCE = 0.02  # ±2%
+    USE_MACD = False  # 默认不使用MACD金叉条件
 
     def __init__(self, name: str = "LimitUpPullback"):
         super().__init__(name)
@@ -113,13 +115,24 @@ class LimitUpPullbackStrategy(BaseStrategy):
         if not self.validate_data(hist, date_idx):
             return False
 
-        # 需要足够的数据计算MACD
-        if date_idx < 34:  # MACD需要至少34个数据点
+        # 需要足够的数据转换为月线
+        if date_idx < 60:  # 需要至少60个交易日
             return False
 
         try:
-            # 计算MACD
-            close_prices = hist['close'].values[:date_idx + 1]
+            # 获取到当前日期的数据
+            current_hist = hist.iloc[:date_idx + 1].copy()
+
+            # 将日线数据转换为月线（每月最后一个交易日）
+            current_hist['year_month'] = pd.to_datetime(current_hist['date']).dt.to_period('M')
+            monthly = current_hist.groupby('year_month').last().reset_index()
+
+            # 需要至少12个月的数据
+            if len(monthly) < 12:
+                return False
+
+            # 计算月线MACD
+            close_prices = monthly['close'].values
 
             # EMA12
             ema12 = pd.Series(close_prices).ewm(span=12, adjust=False).mean()
@@ -136,7 +149,7 @@ class LimitUpPullbackStrategy(BaseStrategy):
 
             # 当前DIF > DEA
             current_cross = dif.iloc[-1] > dea.iloc[-1]
-            # 前一天DIF <= DEA
+            # 前一个月DIF <= DEA
             prev_cross = dif.iloc[-2] <= dea.iloc[-2]
 
             return current_cross and prev_cross
@@ -155,7 +168,7 @@ class LimitUpPullbackStrategy(BaseStrategy):
 
         条件：
         1. 过去10天有涨停（连续不超过3天）
-        2. MACD月线金叉
+        2. MACD月线金叉（可选，由USE_MACD控制）
         3. 股价接近MA20（±2%）
         4. 阳线
         5. 放量（>5日均量的1.5倍）
@@ -175,9 +188,10 @@ class LimitUpPullbackStrategy(BaseStrategy):
         if not self.has_limit_up_in_period(hist, date_idx, code):
             return False
 
-        # 检查2：MACD金叉
-        if not self.check_macd_golden_cross(hist, date_idx):
-            return False
+        # 检查2：MACD金叉（可选）
+        if self.USE_MACD:
+            if not self.check_macd_golden_cross(hist, date_idx):
+                return False
 
         # 获取当前和前一天数据
         if date_idx < self.MA_PERIOD:
@@ -271,9 +285,18 @@ class LimitUpPullbackStrategy(BaseStrategy):
         total_value: float
     ) -> int:
         """计算买入数量（默认20%仓位）"""
-        position_value = cash * 0.2
-        shares = int(position_value / price / 100) * 100
-        return shares
+        import math
+        # 防止异常值和NaN
+        try:
+            if not (price > 0 and cash > 0):
+                return 0
+            if math.isnan(total_value) or math.isinf(total_value):
+                total_value = cash  # 使用现金代替total_value
+            position_value = cash * 0.2
+            shares = int(position_value / price / 100) * 100
+            return shares
+        except:
+            return 0
 
     def get_info(self) -> Dict[str, Any]:
         """获取策略信息"""
@@ -285,6 +308,7 @@ class LimitUpPullbackStrategy(BaseStrategy):
                 "ma_period": self.MA_PERIOD,
                 "volume_ratio": self.VOLUME_RATIO,
                 "ma_tolerance": self.MA_TOLERANCE,
+                "use_macd": self.USE_MACD,
             }
         })
         return info

@@ -208,6 +208,7 @@ class StockLoader:
     def get_sector_stocks(self, sector_name: str) -> List[str]:
         """
         获取指定板块的股票代码列表
+        自动尝试概念板块和行业板块
 
         Args:
             sector_name: 板块名称
@@ -215,9 +216,18 @@ class StockLoader:
         Returns:
             股票代码列表
         """
+        # 先尝试行业板块
+        try:
+            df = ak.stock_board_industry_cons_em(symbol=sector_name)
+            if "代码" in df.columns and not df.empty:
+                return df["代码"].tolist()
+        except Exception:
+            pass
+
+        # 再尝试概念板块
         try:
             df = ak.stock_board_concept_cons_em(symbol=sector_name)
-            if "代码" in df.columns:
+            if "代码" in df.columns and not df.empty:
                 return df["代码"].tolist()
         except Exception:
             pass

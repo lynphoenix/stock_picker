@@ -73,15 +73,33 @@ class BacktestEngine:
         if not all_dates:
             return self._get_empty_results()
 
+        # 预处理：为每只股票建立日期索引 (优化版本)
+        stock_history_indexed = {}
+        for code, hist in stock_history.items():
+            # 使用向量化操作创建日期到行索引的映射
+            dates = hist['date']
+            # 确保日期是datetime类型
+            if not pd.api.types.is_datetime64_any_dtype(dates):
+                dates = pd.to_datetime(dates)
+            # 转换为字符串格式
+            date_strings = dates.dt.strftime('%Y%m%d').values
+            date_to_idx = dict(zip(date_strings, hist.index))
+            stock_history_indexed[code] = {
+                'hist': hist,
+                'date_idx': date_to_idx
+            }
+
         # 按日期遍历
         for i, date_str in enumerate(all_dates):
-            self._process_day(date_str, stock_history, stock_categories)
+            self._process_day(date_str, stock_history_indexed, stock_categories)
 
-            if progress_callback and i % 10 == 0:
+            if progress_callback and (i % 10 == 0 or i == len(all_dates) - 1):
                 progress_callback(i, len(all_dates), date_str)
+                import sys
+                sys.stdout.flush()
 
         # 平掉剩余持仓
-        self._close_remaining_positions(stock_history, all_dates[-1])
+        self._close_remaining_positions(stock_history_indexed, all_dates[-1])
 
         # 计算结果
         return self._calculate_results()
@@ -106,44 +124,45 @@ class BacktestEngine:
     def _process_day(
         self,
         date_str: str,
-        stock_history: Dict[str, pd.DataFrame],
+        stock_history_indexed: Dict[str, Dict],
         stock_categories: Dict[str, Dict] = None
     ):
         """处理单个交易日"""
         date_obj = datetime.strptime(date_str, '%Y%m%d')
 
         # 1. 检查卖出
-        self._check_sell_signals(date_str, stock_history)
+        self._check_sell_signals(date_str, stock_history_indexed)
 
         # 2. 检查买入
         if len(self.positions) < self.max_positions:
             self._check_buy_signals(
-                date_str, stock_history, stock_categories
+                date_str, stock_history_indexed, stock_categories
             )
 
         # 3. 计算当日净值
-        self._record_daily_value(date_str, stock_history)
+        self._record_daily_value(date_str, stock_history_indexed)
 
     def _check_sell_signals(
         self,
         date_str: str,
-        stock_history: Dict[str, pd.DataFrame]
+        stock_history_indexed: Dict[str, Dict]
     ):
         """检查卖出信号"""
         codes_to_sell = []
 
         for code, pos in self.positions.items():
-            if code not in stock_history:
+            if code not in stock_history_indexed:
                 continue
 
-            hist = stock_history[code]
-            day_data = hist[hist['date'].dt.strftime('%Y%m%d') == date_str]
+            stock_data = stock_history_indexed[code]
+            hist = stock_data['hist']
+            date_to_idx = stock_data['date_idx']
 
-            if day_data.empty:
+            if date_str not in date_to_idx:
                 continue
 
-            day_data = day_data.iloc[0]
-            date_idx = hist.index.get_loc(day_data.name)
+            date_idx = date_to_idx[date_str]
+            day_data = hist.iloc[date_idx]
 
             # 调用策略检查卖出信号
             should_sell, sell_shares, reason = self.strategy.check_sell_signal(
@@ -160,30 +179,31 @@ class BacktestEngine:
     def _check_buy_signals(
         self,
         date_str: str,
-        stock_history: Dict[str, pd.DataFrame],
+        stock_history_indexed: Dict[str, Dict],
         stock_categories: Dict[str, Dict] = None
     ):
         """检查买入信号"""
-        for code in stock_history.keys():
+        for code in stock_history_indexed.keys():
             if len(self.positions) >= self.max_positions:
                 break
 
             if code in self.positions:
                 continue
 
-            hist = stock_history[code]
-            day_data = hist[hist['date'].dt.strftime('%Y%m%d') == date_str]
+            stock_data = stock_history_indexed[code]
+            hist = stock_data['hist']
+            date_to_idx = stock_data['date_idx']
 
-            if day_data.empty:
+            if date_str not in date_to_idx:
                 continue
 
-            day_data = day_data.iloc[0]
-            date_idx = hist.index.get_loc(day_data.name)
+            date_idx = date_to_idx[date_str]
+            day_data = hist.iloc[date_idx]
 
             # 调用策略检查买入信号
             if self.strategy.check_buy_signal(hist, date_idx, code):
                 self._execute_buy(
-                    code, day_data, date_str, hist, date_idx, stock_categories
+                    code, day_data, date_str, hist, date_idx, stock_categories, stock_history_indexed
                 )
 
     def _execute_sell(
@@ -208,7 +228,7 @@ class BacktestEngine:
         trade = {
             'date': date_str,
             'code': code,
-            'name': pos['name'],
+            'name': code,  # 使用股票代码作为名称
             'action': 'sell',
             'price': price,
             'shares': shares,
@@ -231,19 +251,21 @@ class BacktestEngine:
         date_str: str,
         hist: pd.DataFrame,
         date_idx: int,
-        stock_categories: Dict[str, Dict] = None
+        stock_categories: Dict[str, Dict] = None,
+        stock_history_indexed: Dict[str, Dict] = None
     ):
         """执行买入"""
         buy_price = day_data['close']
 
         # 计算买入数量
-        total_value = self.cash + sum(
-            p['shares'] * hist[hist['date'].dt.strftime('%Y%m%d') == date_str].iloc[0]['close']
-            for c, p in self.positions.items()
-            if c in stock_history and not stock_history[c][
-                stock_history[c]['date'].dt.strftime('%Y%m%d') == date_str
-            ].empty
-        )
+        total_value = self.cash
+        if stock_history_indexed:
+            for c, p in self.positions.items():
+                if c in stock_history_indexed:
+                    stock_data = stock_history_indexed[c]
+                    if date_str in stock_data['date_idx']:
+                        idx = stock_data['date_idx'][date_str]
+                        total_value += p['shares'] * stock_data['hist'].iloc[idx]['close']
 
         shares = self.strategy.get_position_size(self.cash, buy_price, total_value)
 
@@ -267,7 +289,7 @@ class BacktestEngine:
             'shares': shares,
             'entry_price': buy_price,
             'entry_date': date_str,
-            'name': hist.iloc[date_idx]['name'],
+            'name': code,  # 使用股票代码作为名称
             'category': category,
             'tp30_taken': False,
             'tp50_taken': False,
@@ -277,7 +299,7 @@ class BacktestEngine:
         trade = {
             'date': date_str,
             'code': code,
-            'name': hist.iloc[date_idx]['name'],
+            'name': code,  # 使用股票代码作为名称
             'action': 'buy',
             'price': buy_price,
             'shares': shares,
@@ -289,17 +311,17 @@ class BacktestEngine:
     def _record_daily_value(
         self,
         date_str: str,
-        stock_history: Dict[str, pd.DataFrame]
+        stock_history_indexed: Dict[str, Dict]
     ):
         """记录当日净值"""
         total_value = self.cash
 
         for code, pos in self.positions.items():
-            if code in stock_history:
-                hist = stock_history[code]
-                day_data = hist[hist['date'].dt.strftime('%Y%m%d') == date_str]
-                if not day_data.empty:
-                    total_value += pos['shares'] * day_data.iloc[0]['close']
+            if code in stock_history_indexed:
+                stock_data = stock_history_indexed[code]
+                if date_str in stock_data['date_idx']:
+                    idx = stock_data['date_idx'][date_str]
+                    total_value += pos['shares'] * stock_data['hist'].iloc[idx]['close']
 
         self.daily_values.append({
             'date': date_str,
@@ -308,16 +330,16 @@ class BacktestEngine:
 
     def _close_remaining_positions(
         self,
-        stock_history: Dict[str, pd.DataFrame],
+        stock_history_indexed: Dict[str, Dict],
         final_date: str
     ):
         """平掉剩余持仓"""
         for code, pos in list(self.positions.items()):
-            if code in stock_history:
-                hist = stock_history[code]
-                day_data = hist[hist['date'].dt.strftime('%Y%m%d') == final_date]
-                if not day_data.empty:
-                    final_price = day_data.iloc[0]['close']
+            if code in stock_history_indexed:
+                stock_data = stock_history_indexed[code]
+                if final_date in stock_data['date_idx']:
+                    idx = stock_data['date_idx'][final_date]
+                    final_price = stock_data['hist'].iloc[idx]['close']
                     profit_pct = (final_price - pos['entry_price']) / pos['entry_price'] * 100
 
                     self.cash += pos['shares'] * final_price
@@ -325,7 +347,7 @@ class BacktestEngine:
                     trade = {
                         'date': final_date,
                         'code': code,
-                        'name': pos['name'],
+                        'name': code,  # 使用股票代码作为名称
                         'action': 'sell',
                         'price': final_price,
                         'shares': pos['shares'],
