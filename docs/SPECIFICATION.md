@@ -802,6 +802,184 @@ chat:session:{session_id} → JSON {messages, context, metadata}
 - `test:` 测试
 - `refactor:` 重构
 
+## 开发部署工作流
+
+### 混合开发模式
+
+**本地开发 (Mac) + 服务器调试 (XW-H100)**
+
+由于数据存储需求较大，系统采用混合开发模式：
+- **本地 Mac**: 代码开发、前端调试、API测试
+- **XW-H100 服务器**: 数据采集、回测计算、大数据量调试
+
+### 服务器配置
+
+**XW-H100 服务器**
+- 地址: `61.175.246.236`
+- 用户: `root`
+- SSH端口: `22`
+- 项目目录: `/root/stock_picker`
+- Conda环境: `/root/miniforge3/envs/stock_picker`
+
+**SSH 配置** (~/.ssh/config)
+```
+Host XW-H100
+    HostName 61.175.246.236
+    User root
+    Port 22
+```
+
+### 部署流程
+
+#### 1. 初始部署
+
+```bash
+# 执行部署脚本
+./scripts/deploy-to-h100.sh
+```
+
+部署脚本自动完成：
+1. 检查本地代码
+2. 测试SSH连接
+3. 创建服务器目录
+4. 同步代码 (backend/, frontend/, config files)
+5. 安装依赖
+6. 启动后端服务 (uvicorn on port 8888)
+
+#### 2. 日常开发同步
+
+**本地修改 → 服务器同步**
+```bash
+# 同步后端代码
+rsync -avz --progress \
+  -e "ssh -p 22" \
+  --exclude='__pycache__' --exclude='*.pyc' \
+  backend/ root@61.175.246.236:/root/stock_picker/backend/
+
+# 同步前端代码
+rsync -avz --progress \
+  -e "ssh -p 22" \
+  --exclude='node_modules' --exclude='dist' \
+  frontend/ root@61.175.246.236:/root/stock_picker/frontend/
+
+# 同步配置文件
+rsync -avz -e "ssh -p 22" \
+  config.py requirements.txt \
+  root@61.175.246.236:/root/stock_picker/
+```
+
+**或使用部署脚本**
+```bash
+./scripts/deploy-to-h100.sh
+```
+
+#### 3. 服务器调试
+
+**SSH登录服务器**
+```bash
+ssh XW-H100
+# 或
+ssh root@61.175.246.236
+```
+
+**查看日志**
+```bash
+# 查看后端日志
+tail -f /root/stock_picker/logs/backend.log
+
+# 查看系统日志
+journalctl -u stock_picker -f
+```
+
+**重启服务**
+```bash
+# 在服务器上执行
+cd /root/stock_picker
+./scripts/restart.sh
+```
+
+#### 4. 数据采集
+
+**首次全量采集 (2013年至今)**
+```bash
+# SSH登录服务器
+ssh XW-H100
+
+# 激活环境
+source ~/miniforge3/bin/activate stock_picker
+
+# 运行全量采集
+python -m core.data.auto_fetcher --start-date 2013-01-01 --end-date today
+```
+
+**增量更新 (每日)**
+```bash
+# 系统会自动定时执行
+# 或手动触发
+python -m core.data.auto_fetcher --incremental
+```
+
+#### 5. 本地访问服务
+
+**后端API**
+```bash
+# 本地通过SSH隧道访问
+ssh -L 8888:localhost:8888 root@61.175.246.236
+
+# 然后在浏览器访问
+http://localhost:8888/docs
+```
+
+**前端**
+```bash
+# 本地运行前端开发服务器
+cd frontend
+npm run dev
+
+# 前端会代理API请求到后端
+```
+
+### 常用命令
+
+| 操作 | 命令 |
+|------|------|
+| 同步代码 | `./scripts/deploy-to-h100.sh` |
+| 查看日志 | `ssh XW-H100 'tail -f /root/stock_picker/logs/backend.log'` |
+| 重启服务 | `ssh XW-H100 'cd /root/stock_picker && ./scripts/restart.sh'` |
+| 数据采集 | `ssh XW-H100 'cd /root/stock_picker && python -m core.data.auto_fetcher --incremental'` |
+| 进入Python | `ssh XW-H100 'source ~/miniforge3/bin/activate stock_picker && python'` |
+
+### 监控和维护
+
+**服务健康检查**
+```bash
+# 检查后端API
+curl http://61.175.246.236:8888/health
+
+# 检查数据质量
+curl http://61.175.246.236:8888/api/data-quality/overview
+```
+
+**磁盘空间监控**
+```bash
+# 检查磁盘使用
+ssh XW-H100 'df -h'
+
+# 清理旧日志
+ssh XW-H100 'find /root/stock_picker/logs -name "*.log" -mtime +30 -delete'
+```
+
+**备份**
+```bash
+# 备份数据库
+ssh XW-H100 'pg_dump stock_assistant > backup_$(date +%Y%m%d).sql'
+
+# 备份配置文件
+rsync -avz -e "ssh" \
+  config.py \
+  root@61.175.246.236:/root/stock_picker/backup/
+```
+
 ---
 生成时间: 2026-02-17
 版本: v1.0
