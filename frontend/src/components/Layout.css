@@ -1,0 +1,135 @@
+.app-layout {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.app-header {
+  background: rgba(18, 24, 32, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0;
+  height: 72px;
+  line-height: 72px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.header-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-icon {
+  font-size: 32px;
+  color: var(--accent-primary);
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+.logo-text h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin: 0;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, #00a8cc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: block;
+  margin-top: -8px;
+}
+
+.main-menu {
+  flex: 1;
+  max-width: 400px;
+  margin: 0 48px;
+  background: transparent;
+  border: none;
+}
+
+.main-menu .ant-menu-item {
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.main-menu .ant-menu-item:hover {
+  color: var(--accent-primary) !important;
+}
+
+.main-menu .ant-menu-item-selected {
+  color: var(--accent-primary) !important;
+  background: rgba(0, 217, 255, 0.1) !important;
+  border-bottom: 2px solid var(--accent-primary) !important;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(46, 160, 67, 0.1);
+  border: 1px solid rgba(46, 160, 67, 0.3);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--success);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 12px var(--success);
+}
+
+.app-content {
+  padding: 32px;
+  min-height: calc(100vh - 72px);
+  position: relative;
+}
+
+.content-wrapper {
+  max-width: 1600px;
+  margin: 0 auto;
+  animation: fadeIn 0.6s ease-out;
+}
+
+@media (max-width: 1024px) {
+  .header-content {
+    padding: 0 16px;
+  }
+
+  .main-menu {
+    margin: 0 24px;
+  }
+
+  .logo-subtitle {
+    display: none;
+  }
+}

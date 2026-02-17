@@ -1,0 +1,21 @@
+# FastAPI 核心
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+
+# 数据处理
+pandas>=2.0.0
+numpy>=1.24.0
+# akshare>=1.16.0  # Optional: only needed for data fetching, already installed in main env
+
+# 定时任务
+APScheduler>=3.10.0
+chinese-calendar>=1.9.0
+
+# Excel/PDF导出
+openpyxl>=3.1.0
+XlsxWriter>=3.1.0
+reportlab>=4.0.0
+
+# 已有依赖（如果需要）
+python-dateutil==2.8.2

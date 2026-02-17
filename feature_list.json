@@ -1,0 +1,2282 @@
+[
+  {
+    "category": "functional",
+    "description": "AI Chat Assistant - Basic message send and receive",
+    "steps": [
+      "Step 1: Navigate to /chat page",
+      "Step 2: Type '你好' in chat input",
+      "Step 3: Click send button",
+      "Step 4: Verify system responds with greeting message",
+      "Step 5: Verify message appears in chat history"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI Chat Assistant - Stock screening query with sector filter",
+    "steps": [
+      "Step 1: Navigate to /chat page",
+      "Step 2: Input '帮我找AI板块ROE>15%的股票'",
+      "Step 3: Verify loading indicator shows",
+      "Step 4: Verify ScreenerAgent is invoked",
+      "Step 5: Verify returned stock list contains AI sector stocks",
+      "Step 6: Verify all stocks have ROE > 15%",
+      "Step 7: Verify results displayed in structured card format"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI Chat Assistant - Stock analysis request",
+    "steps": [
+      "Step 1: Navigate to /chat page",
+      "Step 2: Input '分析科大讯飞'",
+      "Step 3: Verify AnalyzerAgent is invoked",
+      "Step 4: Verify analysis includes financial score",
+      "Step 5: Verify analysis includes sentiment score",
+      "Step 6: Verify analysis includes valuation score",
+      "Step 7: Verify analysis includes overall score",
+      "Step 8: Verify results shown in analysis card"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI Chat Assistant - Trading signal generation",
+    "steps": [
+      "Step 1: Navigate to /chat page",
+      "Step 2: Input '科大讯飞可以买吗'",
+      "Step 3: Verify SignalAgent is invoked",
+      "Step 4: Verify trading signal is generated",
+      "Step 5: Verify signal includes action (buy/sell/hold)",
+      "Step 6: Verify signal includes target price",
+      "Step 7: Verify signal includes stop loss price",
+      "Step 8: Verify signal includes position size suggestion",
+      "Step 9: Verify signal includes reasoning"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI Chat Assistant - Multi-agent collaboration flow",
+    "steps": [
+      "Step 1: Navigate to /chat page",
+      "Step 2: Input '找AI板块低估的股票并分析前3名'",
+      "Step 3: Verify ScreenerAgent filters AI stocks",
+      "Step 4: Verify AnalyzerAgent analyzes top 3 stocks",
+      "Step 5: Verify SignalAgent generates signals",
+      "Step 6: Verify ValidatorAgent validates signals",
+      "Step 7: Verify results aggregated and displayed",
+      "Step 8: Verify Agent execution order is correct"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI Chat Assistant - WebSocket streaming response",
+    "steps": [
+      "Step 1: Navigate to /chat page",
+      "Step 2: Open browser DevTools Network tab",
+      "Step 3: Input '分析贵州茅台'",
+      "Step 4: Verify WebSocket connection established",
+      "Step 5: Verify streaming chunks received",
+      "Step 6: Verify response appears progressively",
+      "Step 7: Verify final response complete"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI Chat Assistant - Error handling for empty message",
+    "steps": [
+      "Step 1: Navigate to /chat page",
+      "Step 2: Leave input empty and click send",
+      "Step 3: Verify error message shown",
+      "Step 4: Verify error message contains '无效的查询'",
+      "Step 5: Verify no API call made"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI Chat Assistant - Chat session persistence",
+    "steps": [
+      "Step 1: Navigate to /chat page",
+      "Step 2: Send message '分析比亚迪'",
+      "Step 3: Refresh page",
+      "Step 4: Verify chat history restored",
+      "Step 5: Verify previous messages visible"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI Chat Assistant - Multiple chat sessions",
+    "steps": [
+      "Step 1: Navigate to /chat page",
+      "Step 2: Create new session",
+      "Step 3: Send message in session 1",
+      "Step 4: Create new session 2",
+      "Step 5: Send different message in session 2",
+      "Step 6: Switch back to session 1",
+      "Step 7: Verify session 1 content preserved",
+      "Step 8: Verify session list shows both sessions"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ScreenerAgent - Basic sector filtering",
+    "steps": [
+      "Step 1: Call POST /api/agents/screen",
+      "Step 2: Send body: {sector: 'AI'}",
+      "Step 3: Verify HTTP 200 response",
+      "Step 4: Verify response contains stock list",
+      "Step 5: Verify all stocks are in AI sector"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ScreenerAgent - Multi-condition filtering (sector + ROE + PE)",
+    "steps": [
+      "Step 1: Call POST /api/agents/screen",
+      "Step 2: Send body: {sector: 'AI', min_roe: 15, max_pe: 50}",
+      "Step 3: Verify HTTP 200 response",
+      "Step 4: Verify all stocks have ROE >= 15",
+      "Step 5: Verify all stocks have PE <= 50",
+      "Step 6: Verify all stocks in AI sector"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ScreenerAgent - Market cap filtering",
+    "steps": [
+      "Step 1: Call POST /api/agents/screen",
+      "Step 2: Send body: {min_market_cap: 100000000000}",
+      "Step 3: Verify HTTP 200 response",
+      "Step 4: Verify all stocks have market cap >= 100B"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ScreenerAgent - Result limit (max 50 stocks)",
+    "steps": [
+      "Step 1: Call POST /api/agents/screen",
+      "Step 2: Send body: {sector: 'AI'} with many matching stocks",
+      "Step 3: Verify response contains <= 50 stocks",
+      "Step 4: Verify stocks are sorted by relevance"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ScreenerAgent - Technical indicator filter",
+    "steps": [
+      "Step 1: Call POST /api/agents/screen",
+      "Step 2: Send body: {technical: {ma5_above_ma20: true}}",
+      "Step 3: Verify HTTP 200 response",
+      "Step 4: Verify all stocks have MA5 > MA20"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AnalyzerAgent - Single stock comprehensive analysis",
+    "steps": [
+      "Step 1: Call POST /api/agents/analyze",
+      "Step 2: Send body: {stock_code: '002230'}",
+      "Step 3: Verify HTTP 200 response",
+      "Step 4: Verify response has financial_score",
+      "Step 5: Verify response has sentiment_score",
+      "Step 6: Verify response has valuation_score",
+      "Step 7: Verify response has overall_score",
+      "Step 8: Verify all scores between 0-100"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AnalyzerAgent - Financial score calculation",
+    "steps": [
+      "Step 1: Call POST /api/agents/analyze for stock with known financials",
+      "Step 2: Verify financial_score includes ROE analysis",
+      "Step 3: Verify financial_score includes revenue growth",
+      "Step 4: Verify financial_score includes profit analysis",
+      "Step 5: Verify financial_score includes debt ratio",
+      "Step 6: Verify score calculation documented"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AnalyzerAgent - Sentiment score calculation",
+    "steps": [
+      "Step 1: Call POST /api/agents/analyze for stock with recent news",
+      "Step 2: Verify sentiment_score includes news analysis",
+      "Step 3: Verify sentiment_score includes keywords",
+      "Step 4: Verify sentiment_score includes trend analysis",
+      "Step 5: Verify score between 0-100"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AnalyzerAgent - Valuation score calculation",
+    "steps": [
+      "Step 1: Call POST /api/agents/analyze",
+      "Step 2: Verify valuation_score includes PE analysis",
+      "Step 3: Verify valuation_score includes PB analysis",
+      "Step 4: Verify valuation_score compares to historical",
+      "Step 5: Verify valuation_score compares to sector"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AnalyzerAgent - Batch analysis (multiple stocks)",
+    "steps": [
+      "Step 1: Call POST /api/agents/analyze",
+      "Step 2: Send body: {stock_codes: ['002230', '000858', '002415']}",
+      "Step 3: Verify HTTP 200 response",
+      "Step 4: Verify response contains analysis for all 3 stocks",
+      "Step 5: Verify response time < 10 seconds"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "SignalAgent - Buy signal generation",
+    "steps": [
+      "Step 1: Call POST /api/signals/generate",
+      "Step 2: Send body: {stock_code: '002230', analysis_scores: {overall: 85}}",
+      "Step 3: Verify signal.action === 'buy'",
+      "Step 4: Verify signal has current_price",
+      "Step 5: Verify signal has target_price > current_price",
+      "Step 6: Verify signal has stop_loss_price < current_price",
+      "Step 7: Verify signal has position_size",
+      "Step 8: Verify signal has reasoning"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "SignalAgent - Sell signal generation",
+    "steps": [
+      "Step 1: Call POST /api/signals/generate for overvalued stock",
+      "Step 2: Verify signal.action === 'sell'",
+      "Step 3: Verify signal has sell_reason",
+      "Step 4: Verify signal indicates profit_taking or stop_loss"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "SignalAgent - Hold signal generation",
+    "steps": [
+      "Step 1: Call POST /api/signals/generate for neutral stock",
+      "Step 2: Verify signal.action === 'hold'",
+      "Step 3: Verify signal has hold_reason",
+      "Step 4: Verify signal has conditions_to_watch"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "SignalAgent - Risk-based position sizing",
+    "steps": [
+      "Step 1: Generate signal for high-risk stock",
+      "Step 2: Verify position_size <= 10%",
+      "Step 3: Generate signal for low-risk stock",
+      "Step 4: Verify position_size >= 15%"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "SignalAgent - Target price calculation",
+    "steps": [
+      "Step 1: Generate buy signal at price 100",
+      "Step 2: Verify target_price has reasonable upside (10-30%)",
+      "Step 3: Verify stop_loss_price limits downside (5-10%)",
+      "Step 4: Verify risk/reward ratio >= 2:1"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ValidatorAgent - Signal validation",
+    "steps": [
+      "Step 1: Generate trading signal",
+      "Step 2: Call ValidatorAgent with signal",
+      "Step 3: Verify validation checks data freshness",
+      "Step 4: Verify validation checks logic consistency",
+      "Step 5: Verify validation checks risk boundaries",
+      "Step 6: Verify validation checks market conditions",
+      "Step 7: Verify returns validation result (pass/fail/adjust)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ValidatorAgent - Signal adjustment recommendation",
+    "steps": [
+      "Step 1: Generate aggressive signal (high position size)",
+      "Step 2: Call ValidatorAgent",
+      "Step 3: Verify validator recommends adjustment",
+      "Step 4: Verify adjustment includes reduced position_size",
+      "Step 5: Verify adjustment includes reasoning"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "RiskAgent - Portfolio risk assessment",
+    "steps": [
+      "Step 1: Call POST /api/agents/risk",
+      "Step 2: Send body: {portfolio: [{code: '002230', weight: 0.3}, {code: '000858', weight: 0.2}]}",
+      "Step 3: Verify response has risk_level (low/medium/high)",
+      "Step 4: Verify response has correlation_analysis",
+      "Step 5: Verify response has VaR calculation",
+      "Step 6: Verify response has optimization_suggestions"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "RiskAgent - Concentration risk detection",
+    "steps": [
+      "Step 1: Submit portfolio with 70% in single sector",
+      "Step 2: Verify RiskAgent flags concentration risk",
+      "Step 3: Verify recommendation includes diversification"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Orchestrator - Intent recognition for screening",
+    "steps": [
+      "Step 1: Send message '找AI板块的股票'",
+      "Step 2: Verify Orchestrator recognizes screening intent",
+      "Step 3: Verify Orchestrator routes to ScreenerAgent",
+      "Step 4: Verify correct parameters extracted"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Orchestrator - Intent recognition for analysis",
+    "steps": [
+      "Step 1: Send message '分析宁德时代'",
+      "Step 2: Verify Orchestrator recognizes analysis intent",
+      "Step 3: Verify Orchestrator routes to AnalyzerAgent",
+      "Step 4: Verify stock code extracted correctly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Orchestrator - Intent recognition for signal",
+    "steps": [
+      "Step 1: Send message '腾讯控股可以买吗'",
+      "Step 2: Verify Orchestrator recognizes signal intent",
+      "Step 3: Verify Orchestrator routes to SignalAgent"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Orchestrator - Complex multi-agent workflow",
+    "steps": [
+      "Step 1: Send message '找低估的AI股票并给出交易建议'",
+      "Step 2: Verify Orchestrator identifies multiple agents needed",
+      "Step 3: Verify ScreenerAgent called first",
+      "Step 4: Verify AnalyzerAgent called on results",
+      "Step 5: Verify SignalAgent called on top stocks",
+      "Step 6: Verify ValidatorAgent validates signals",
+      "Step 7: Verify results aggregated properly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Orchestrator - Agent failure handling",
+    "steps": [
+      "Step 1: Mock ScreenerAgent to fail",
+      "Step 2: Send screening query",
+      "Step 3: Verify Orchestrator catches error",
+      "Step 4: Verify user receives error message",
+      "Step 5: Verify other agents not affected",
+      "Step 6: Verify error logged"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Orchestrator - Parallel agent execution",
+    "steps": [
+      "Step 1: Send query requiring independent analyses",
+      "Step 2: Verify agents execute in parallel where possible",
+      "Step 3: Verify response time < sequential execution",
+      "Step 4: Verify results correctly merged"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Trading Signals - Real-time signal monitoring",
+    "steps": [
+      "Step 1: Navigate to /signals page",
+      "Step 2: Verify signal list loads",
+      "Step 3: Verify signals show action (buy/sell/hold)",
+      "Step 4: Verify signals show stock name and code",
+      "Step 5: Verify signals show timestamp",
+      "Step 6: Verify signals show confidence level"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Trading Signals - Signal detail view",
+    "steps": [
+      "Step 1: Navigate to /signals page",
+      "Step 2: Click on a signal",
+      "Step 3: Verify detail modal opens",
+      "Step 4: Verify shows full analysis scores",
+      "Step 5: Verify shows price targets",
+      "Step 6: Verify shows risk assessment",
+      "Step 7: Verify shows reasoning"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Trading Signals - Signal filtering",
+    "steps": [
+      "Step 1: Navigate to /signals page",
+      "Step 2: Select filter: action='buy'",
+      "Step 3: Verify only buy signals shown",
+      "Step 4: Select filter: confidence='high'",
+      "Step 5: Verify only high confidence signals shown",
+      "Step 6: Clear filters",
+      "Step 7: Verify all signals shown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Trading Signals - Historical signal performance",
+    "steps": [
+      "Step 1: Navigate to /signals page",
+      "Step 2: Click 'History' tab",
+      "Step 3: Verify historical signals load",
+      "Step 4: Verify signals show actual outcome",
+      "Step 5: Verify success rate calculated",
+      "Step 6: Verify past signals color-coded by result"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Quality Monitor - Overview dashboard",
+    "steps": [
+      "Step 1: Navigate to /data-monitor page",
+      "Step 2: Verify total stocks count displayed",
+      "Step 3: Verify overall completeness rate shown",
+      "Step 4: Verify breakdown by market (A/HK/US)",
+      "Step 5: Verify breakdown by data type",
+      "Step 6: Verify last update timestamp shown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Quality Monitor - Market-specific completeness",
+    "steps": [
+      "Step 1: Navigate to /data-monitor page",
+      "Step 2: View SH market completeness",
+      "Step 3: Verify percentage calculated correctly",
+      "Step 4: View SZ market completeness",
+      "Step 5: Verify percentage calculated correctly",
+      "Step 6: Verify HK market completeness shown",
+      "Step 7: Verify US market completeness shown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Quality Monitor - Data type breakdown",
+    "steps": [
+      "Step 1: Navigate to /data-monitor page",
+      "Step 2: Verify daily price completeness shown",
+      "Step 3: Verify minute price completeness shown",
+      "Step 4: Verify financial statements completeness shown",
+      "Step 5: Verify news sentiment completeness shown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Quality Monitor - Problem stocks list",
+    "steps": [
+      "Step 1: Navigate to /data-monitor page",
+      "Step 2: Scroll to problem stocks section",
+      "Step 3: Verify stocks with missing data listed",
+      "Step 4: Verify each stock shows missing data types",
+      "Step 5: Verify each stock shows completeness rate",
+      "Step 6: Click on stock for detail"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Quality Monitor - Single stock detail view",
+    "steps": [
+      "Step 1: Navigate to /data-monitor page",
+      "Step 2: Search for stock '002230'",
+      "Step 3: Click on stock",
+      "Step 4: Verify detail view shows data types",
+      "Step 5: Verify shows date ranges available",
+      "Step 6: Verify shows missing dates",
+      "Step 7: Verify shows last update time"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Quality Monitor - Single stock repair",
+    "steps": [
+      "Step 1: Navigate to stock detail in data monitor",
+      "Step 2: Verify missing data identified",
+      "Step 3: Click 'Repair' button",
+      "Step 4: Verify repair job queued",
+      "Step 5: Verify status shows 'Repairing'",
+      "Step 6: Wait for repair complete",
+      "Step 7: Verify completeness rate improved"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Quality Monitor - Batch repair",
+    "steps": [
+      "Step 1: Navigate to /data-monitor page",
+      "Step 2: Select multiple problem stocks",
+      "Step 3: Click 'Batch Repair' button",
+      "Step 4: Verify confirmation modal shows",
+      "Step 5: Confirm repair",
+      "Step 6: Verify repair jobs queued for all stocks",
+      "Step 7: Verify progress indicator shows"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Quality Monitor - Data collection logs",
+    "steps": [
+      "Step 1: Navigate to /data-monitor page",
+      "Step 2: Click 'Logs' tab",
+      "Step 3: Verify collection logs load",
+      "Step 4: Verify logs show timestamp",
+      "Step 5: Verify logs show data source",
+      "Step 6: Verify logs show status (success/failure)",
+      "Step 7: Verify logs can be filtered by date"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Quality Monitor - Completeness distribution chart",
+    "steps": [
+      "Step 1: Navigate to /data-monitor page",
+      "Step 2: View completeness distribution chart",
+      "Step 3: Verify chart shows histogram of completeness rates",
+      "Step 4: Verify x-axis shows 0-100% range",
+      "Step 5: Verify y-axis shows stock count",
+      "Step 6: Hover over bars to see stock list"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Multi-Market Support - A-share market recognition",
+    "steps": [
+      "Step 1: Input stock code '600036'",
+      "Step 2: Verify system recognizes as SH market",
+      "Step 3: Input stock code '000858'",
+      "Step 4: Verify system recognizes as SZ market"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Multi-Market Support - Hong Kong market recognition",
+    "steps": [
+      "Step 1: Input stock code '00700'",
+      "Step 2: Verify system recognizes as HK market",
+      "Step 3: Verify data fetched from HK source",
+      "Step 4: Verify price shown in HKD"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Multi-Market Support - US market recognition",
+    "steps": [
+      "Step 1: Input stock code 'AAPL'",
+      "Step 2: Verify system recognizes as US market",
+      "Step 3: Verify data fetched from US source",
+      "Step 4: Verify price shown in USD"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Multi-Market Support - Currency conversion display",
+    "steps": [
+      "Step 1: View Hong Kong stock in portfolio",
+      "Step 2: Verify price shown in HKD",
+      "Step 3: Verify CNY equivalent shown",
+      "Step 4: Verify exchange rate displayed",
+      "Step 5: View US stock",
+      "Step 6: Verify price shown in USD",
+      "Step 7: Verify CNY equivalent shown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Multi-Market Support - Cross-market screening",
+    "steps": [
+      "Step 1: Execute screening query without market filter",
+      "Step 2: Verify results include A-shares",
+      "Step 3: Verify results include HK stocks if applicable",
+      "Step 4: Verify results include US stocks if applicable",
+      "Step 5: Verify market label shown for each stock"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Multi-Market Support - Market-specific data collection",
+    "steps": [
+      "Step 1: Trigger data collection for A-shares",
+      "Step 2: Verify Tushare API called",
+      "Step 3: Trigger data collection for HK stocks",
+      "Step 4: Verify appropriate API called",
+      "Step 5: Trigger data collection for US stocks",
+      "Step 6: Verify appropriate API called"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Dashboard - Real-time market indices",
+    "steps": [
+      "Step 1: Navigate to / page",
+      "Step 2: Verify main indices shown (上证指数, 深证成指, 创业板指)",
+      "Step 3: Verify current prices displayed",
+      "Step 4: Verify changes displayed with color (green/red)",
+      "Step 5: Verify changes show percentage and absolute value"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Dashboard - Market statistics",
+    "steps": [
+      "Step 1: Navigate to / page",
+      "Step 2: Verify 'Limit Up' count shown",
+      "Step 3: Verify 'Limit Down' count shown",
+      "Step 4: Verify 'Active' stocks count shown",
+      "Step 5: Verify 'Neutral' stocks count shown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Dashboard - Real-time signal feed",
+    "steps": [
+      "Step 1: Navigate to / page",
+      "Step 2: Scroll to signal feed section",
+      "Step 3: Verify recent signals shown in timeline",
+      "Step 4: Verify signals update in real-time via WebSocket",
+      "Step 5: Click signal to view detail",
+      "Step 6: Verify detail modal opens"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Dashboard - Sector heatmap",
+    "steps": [
+      "Step 1: Navigate to / page",
+      "Step 2: View sector heatmap",
+      "Step 3: Verify sectors shown as blocks",
+      "Step 4: Verify color indicates performance (red/green)",
+      "Step 5: Hover over sector",
+      "Step 6: Verify tooltip shows sector name and change"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Dashboard - Watchlist monitoring",
+    "steps": [
+      "Step 1: Navigate to / page",
+      "Step 2: View watchlist section",
+      "Step 3: Verify watched stocks shown",
+      "Step 4: Verify current prices displayed",
+      "Step 5: Verify changes displayed",
+      "Step 6: Verify prices update in real-time"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Dashboard - Portfolio overview",
+    "steps": [
+      "Step 1: Navigate to / page",
+      "Step 2: View portfolio section",
+      "Step 3: Verify total value shown",
+      "Step 4: Verify daily P&L shown",
+      "Step 5: Verify P&L percentage shown",
+      "Step 6: Verify pie chart shows allocation",
+      "Step 7: Verify top holdings listed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Backtesting - Strategy selection",
+    "steps": [
+      "Step 1: Navigate to /backtest page",
+      "Step 2: Verify strategy dropdown available",
+      "Step 3: Select 'AI Low Valuation' strategy",
+      "Step 4: Verify strategy description shown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Backtesting - Date range selection",
+    "steps": [
+      "Step 1: Navigate to /backtest page",
+      "Step 2: Verify start date picker available",
+      "Step 3: Verify end date picker available",
+      "Step 4: Select date range (2024-01-01 to 2024-12-31)",
+      "Step 5: Verify range validation works"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Backtesting - Parameter configuration",
+    "steps": [
+      "Step 1: Navigate to /backtest page",
+      "Step 2: Verify initial capital input available",
+      "Step 3: Verify max position size input available",
+      "Step 4: Verify stop loss percentage input available",
+      "Step 5: Set parameters",
+      "Step 6: Verify parameters persist"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Backtesting - Run backtest",
+    "steps": [
+      "Step 1: Configure strategy and parameters",
+      "Step 2: Click 'Run Backtest' button",
+      "Step 3: Verify loading indicator shows",
+      "Step 4: Verify progress updates",
+      "Step 5: Wait for completion",
+      "Step 6: Verify results displayed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Backtesting - Results display",
+    "steps": [
+      "Step 1: Complete backtest run",
+      "Step 2: Verify total return shown",
+      "Step 3: Verify annual return shown",
+      "Step 4: Verify max drawdown shown",
+      "Step 5: Verify win rate shown",
+      "Step 6: Verify Sharpe ratio shown",
+      "Step 7: Verify equity curve chart displayed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Backtesting - Trade history",
+    "steps": [
+      "Step 1: Complete backtest run",
+      "Step 2: Click 'Trade History' tab",
+      "Step 3: Verify all trades listed",
+      "Step 4: Verify each trade shows entry/exit price",
+      "Step 5: Verify each trade shows profit/loss",
+      "Step 6: Verify trades sortable by column"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Portfolio Management - Add holding",
+    "steps": [
+      "Step 1: Navigate to /portfolio page",
+      "Step 2: Click 'Add Holding' button",
+      "Step 3: Enter stock code '002230'",
+      "Step 4: Enter shares '1000'",
+      "Step 5: Enter average cost '50.00'",
+      "Step 6: Click save",
+      "Step 7: Verify holding added to list"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Portfolio Management - Edit holding",
+    "steps": [
+      "Step 1: Navigate to /portfolio page",
+      "Step 2: Click edit on existing holding",
+      "Step 3: Modify shares",
+      "Step 4: Click save",
+      "Step 5: Verify holding updated"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Portfolio Management - Delete holding",
+    "steps": [
+      "Step 1: Navigate to /portfolio page",
+      "Step 2: Click delete on holding",
+      "Step 3: Verify confirmation dialog shown",
+      "Step 4: Confirm deletion",
+      "Step 5: Verify holding removed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Portfolio Management - Real-time P&L calculation",
+    "steps": [
+      "Step 1: Navigate to /portfolio page",
+      "Step 2: View holding list",
+      "Step 3: Verify current price fetched",
+      "Step 4: Verify market value calculated",
+      "Step 5: Verify P&L calculated",
+      "Step 6: Verify P&L percentage calculated",
+      "Step 7: Verify color coding (green for profit, red for loss)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Portfolio Management - Allocation chart",
+    "steps": [
+      "Step 1: Navigate to /portfolio page",
+      "Step 2: View allocation pie chart",
+      "Step 3: Verify chart shows holdings distribution",
+      "Step 4: Verify hover shows details",
+      "Step 5: Verify legend shows stock names"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Portfolio Optimization - Input stock pool",
+    "steps": [
+      "Step 1: Navigate to /portfolio page",
+      "Step 2: Click 'Optimization' tab",
+      "Step 3: Enter candidate stock codes (comma separated)",
+      "Step 4: Verify stocks validated"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Portfolio Optimization - Set risk preference",
+    "steps": [
+      "Step 1: In optimization tab",
+      "Step 2: Select risk preference (Conservative/Moderate/Aggressive)",
+      "Step 3: Verify expected return adjusts",
+      "Step 4: Verify risk level indicator updates"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Portfolio Optimization - Calculate optimal weights",
+    "steps": [
+      "Step 1: Input stock pool and risk preference",
+      "Step 2: Click 'Calculate Optimal Weights'",
+      "Step 3: Verify calculation runs",
+      "Step 4: Verify optimal weights displayed",
+      "Step 5: Verify expected return shown",
+      "Step 6: Verify expected risk shown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Portfolio Optimization - Efficient frontier chart",
+    "steps": [
+      "Step 1: Complete optimization calculation",
+      "Step 2: View efficient frontier chart",
+      "Step 3: Verify x-axis shows risk",
+      "Step 4: Verify y-axis shows return",
+      "Step 5: Verify frontier curve displayed",
+      "Step 6: Verify optimal portfolio marked"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Settings - API key configuration",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Verify DeepSeek API key field shown (masked)",
+      "Step 3: Click edit button",
+      "Step 4: Enter new API key",
+      "Step 5: Click save",
+      "Step 6: Verify success message"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Settings - Data source configuration",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: View data source configuration",
+      "Step 3: Verify Tushare shown as primary",
+      "Step 4: Verify AKShare shown as fallback",
+      "Step 5: Toggle primary source",
+      "Step 6: Verify preference saved"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Settings - Agent parameters",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: View Agent parameters section",
+      "Step 3: Modify ScreenerAgent max results",
+      "Step 4: Modify SignalAgent risk threshold",
+      "Step 5: Click save",
+      "Step 6: Verify parameters updated"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Settings - User management (admin only)",
+    "steps": [
+      "Step 1: Login as admin",
+      "Step 2: Navigate to /settings page",
+      "Step 3: Click 'Users' tab",
+      "Step 4: Verify user list shown",
+      "Step 5: Click 'Add User'",
+      "Step 6: Enter user details",
+      "Step 7: Click save",
+      "Step 8: Verify user added"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Authentication - User login",
+    "steps": [
+      "Step 1: Navigate to /login page",
+      "Step 2: Enter username",
+      "Step 3: Enter password",
+      "Step 4: Click login button",
+      "Step 5: Verify redirect to dashboard",
+      "Step 6: Verify JWT token stored"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Authentication - User logout",
+    "steps": [
+      "Step 1: Login as user",
+      "Step 2: Click logout button",
+      "Step 3: Verify redirect to login",
+      "Step 4: Verify JWT token cleared"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Authentication - Token refresh",
+    "steps": [
+      "Step 1: Login as user",
+      "Step 2: Wait for token to near expiry",
+      "Step 3: Perform API call",
+      "Step 4: Verify token refreshed automatically",
+      "Step 5: Verify session maintained"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Authentication - Protected route access",
+    "steps": [
+      "Step 1: Logout user",
+      "Step 2: Navigate directly to /chat",
+      "Step 3: Verify redirect to login",
+      "Step 4: Verify 'login required' message"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "WebSocket - Connection establishment",
+    "steps": [
+      "Step 1: Navigate to /chat page",
+      "Step 2: Open browser DevTools",
+      "Step 3: Verify WebSocket connection established",
+      "Step 4: Verify connection stable"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "WebSocket - Real-time price updates",
+    "steps": [
+      "Step 1: Navigate to dashboard",
+      "Step 2: Monitor watchlist stock price",
+      "Step 3: Verify price updates via WebSocket",
+      "Step 4: Verify update frequency < 1 second"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "WebSocket - Reconnection on disconnect",
+    "steps": [
+      "Step 1: Navigate to /chat page",
+      "Step 2: Simulate network disconnect",
+      "Step 3: Verify reconnection attempted",
+      "Step 4: Verify connection restored",
+      "Step 5: Verify functionality resumes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "API - Health check endpoint",
+    "steps": [
+      "Step 1: Call GET /health",
+      "Step 2: Verify HTTP 200 response",
+      "Step 3: Verify response contains status: 'healthy'",
+      "Step 4: Verify response contains timestamp"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "API - Chat endpoint success",
+    "steps": [
+      "Step 1: Call POST /api/chat",
+      "Step 2: Send valid message body",
+      "Step 3: Verify HTTP 200 response",
+      "Step 4: Verify response contains analysis result"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "API - Chat endpoint validation error",
+    "steps": [
+      "Step 1: Call POST /api/chat",
+      "Step 2: Send empty message",
+      "Step 3: Verify HTTP 400 response",
+      "Step 4: Verify error message present"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "API - Chat endpoint unauthorized",
+    "steps": [
+      "Step 1: Call POST /api/chat without token",
+      "Step 2: Verify HTTP 401 response",
+      "Step 3: Verify error message indicates authentication required"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "API - Signals endpoint",
+    "steps": [
+      "Step 1: Call GET /api/signals/realtime",
+      "Step 2: Send valid auth token",
+      "Step 3: Verify HTTP 200 response",
+      "Step 4: Verify response contains signals array",
+      "Step 5: Verify each signal has required fields"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "API - Data quality overview endpoint",
+    "steps": [
+      "Step 1: Call GET /api/data-quality/overview",
+      "Step 2: Verify HTTP 200 response",
+      "Step 3: Verify response contains total_stocks",
+      "Step 4: Verify response contains completeness_rate",
+      "Step 5: Verify response contains market_breakdown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "API - Stock data detail endpoint",
+    "steps": [
+      "Step 1: Call GET /api/data-quality/stock/002230/detail",
+      "Step 2: Verify HTTP 200 response",
+      "Step 3: Verify response contains stock info",
+      "Step 4: Verify response contains data_types",
+      "Step 5: Verify response contains completeness_info"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "API - Stock repair endpoint",
+    "steps": [
+      "Step 1: Call POST /api/data-quality/stock/002230/repair",
+      "Step 2: Verify HTTP 200 response",
+      "Step 3: Verify response contains job_id",
+      "Step 4: Verify repair job initiated"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Database - Stock table CRUD",
+    "steps": [
+      "Step 1: Insert stock record",
+      "Step 2: Query stock by code",
+      "Step 3: Verify record returned correctly",
+      "Step 4: Update stock market_cap",
+      "Step 5: Verify update persisted",
+      "Step 6: Delete stock",
+      "Step 7: Verify deletion successful"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Database - Financial statements storage",
+    "steps": [
+      "Step 1: Insert financial statement",
+      "Step 2: Verify ROE stored correctly",
+      "Step 3: Verify revenue stored as DECIMAL",
+      "Step 4: Query by stock_code and date",
+      "Step 5: Verify unique constraint enforced"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Database - News sentiment storage",
+    "steps": [
+      "Step 1: Insert news record",
+      "Step 2: Verify sentiment_score stored",
+      "Step 3: Verify keywords array stored",
+      "Step 4: Query recent news for stock",
+      "Step 5: Verify results ordered by publish_time"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Database - Data quality log storage",
+    "steps": [
+      "Step 1: Run data quality check",
+      "Step 2: Verify log entry created",
+      "Step 3: Verify completeness_rate calculated",
+      "Step 4: Verify missing_dates array stored",
+      "Step 5: Query historical logs",
+      "Step 6: Verify logs accessible"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Redis - Real-time price caching",
+    "steps": [
+      "Step 1: Store price data in Redis",
+      "Step 2: Key: price:002230:1m",
+      "Step 3: Verify data stored",
+      "Step 4: Retrieve price data",
+      "Step 5: Verify data returned correctly",
+      "Step 6: Verify TTL set appropriately"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Redis - Technical indicators caching",
+    "steps": [
+      "Step 1: Calculate indicators for stock",
+      "Step 2: Store in Redis key: indicator:002230",
+      "Step 3: Verify JSON structure",
+      "Step 4: Retrieve from Redis",
+      "Step 5: Verify all indicators present (MA5, MA20, MACD, RSI, BOLL)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Redis - Signal caching",
+    "steps": [
+      "Step 1: Generate trading signal",
+      "Step 2: Store in Redis key: signal:002230",
+      "Step 3: Verify signal fields stored",
+      "Step 4: Retrieve signal",
+      "Step 5: Verify signal complete"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Redis - Chat session storage",
+    "steps": [
+      "Step 1: Create chat session",
+      "Step 2: Store in Redis key: chat:session:{id}",
+      "Step 3: Add messages to session",
+      "Step 4: Retrieve session",
+      "Step 5: Verify message history intact"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Collection - A-share daily price collection",
+    "steps": [
+      "Step 1: Trigger A-share daily collection",
+      "Step 2: Verify Tushare API called",
+      "Step 3: Verify data parsed correctly",
+      "Step 4: Verify data stored in database",
+      "Step 5: Verify cache updated",
+      "Step 6: Verify collection logged"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Collection - Minute-level price collection",
+    "steps": [
+      "Step 1: Trigger minute data collection",
+      "Step 2: Verify API supports minute data",
+      "Step 3: Verify data stored in Redis TimeSeries",
+      "Step 4: Verify recent data retrievable"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Collection - Financial statements collection",
+    "steps": [
+      "Step 1: Trigger financial data collection",
+      "Step 2: Verify API returns report data",
+      "Step 3: Verify ROE, revenue, profit extracted",
+      "Step 4: Verify data stored in database",
+      "Step 5: Verify latest report date tracked"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Collection - News sentiment collection",
+    "steps": [
+      "Step 1: Trigger news collection",
+      "Step 2: Verify news API called",
+      "Step 3: Verify sentiment analyzed",
+      "Step 4: Verify keywords extracted",
+      "Step 5: Verify data stored"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Collection - Fallback mechanism",
+    "steps": [
+      "Step 1: Mock primary API failure",
+      "Step 2: Trigger data collection",
+      "Step 3: Verify fallback API called",
+      "Step 4: Verify data retrieved from fallback",
+      "Step 5: Verify switch logged"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Collection - Retry mechanism",
+    "steps": [
+      "Step 1: Mock API rate limit",
+      "Step 2: Trigger collection",
+      "Step 3: Verify retry attempted after delay",
+      "Step 4: Verify exponential backoff used",
+      "Step 5: Verify max retries enforced"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Data Collection - Scheduled execution",
+    "steps": [
+      "Step 1: Configure collection schedule",
+      "Step 2: Verify scheduler registered",
+      "Step 3: Wait for scheduled time",
+      "Step 4: Verify job executed",
+      "Step 5: Verify data updated"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Error Handling - Agent timeout",
+    "steps": [
+      "Step 1: Mock slow Agent response (>30s)",
+      "Step 2: Send query",
+      "Step 3: Verify timeout triggered",
+      "Step 4: Verify partial results returned if available",
+      "Step 5: Verify timeout message shown to user",
+      "Step 6: Verify error logged"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Error Handling - API rate limit",
+    "steps": [
+      "Step 1: Mock rate limit response",
+      "Step 2: Send request",
+      "Step 3: Verify 429 status handled",
+      "Step 4: Verify retry after delay",
+      "Step 5: Verify user notified"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Error Handling - Database connection failure",
+    "steps": [
+      "Step 1: Stop database service",
+      "Step 2: Send API request",
+      "Step 3: Verify error caught",
+      "Step 4: Verify friendly error message",
+      "Step 5: Restart database",
+      "Step 6: Verify system recovers"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Error Handling - LLM API failure",
+    "steps": [
+      "Step 1: Mock LLM API failure",
+      "Step 2: Send analysis request",
+      "Step 3: Verify fallback to cached results",
+      "Step 4: Or verify error message shown",
+      "Step 5: Verify logged"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Security - JWT token validation",
+    "steps": [
+      "Step 1: Access protected endpoint with valid token",
+      "Step 2: Verify request succeeds",
+      "Step 3: Access with expired token",
+      "Step 4: Verify 401 returned",
+      "Step 5: Access with invalid token",
+      "Step 6: Verify 401 returned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Security - SQL injection prevention",
+    "steps": [
+      "Step 1: Send request with SQL injection payload",
+      "Step 2: Verify input sanitized",
+      "Step 3: Verify no SQL error",
+      "Step 4: Verify safe response returned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Security - XSS prevention",
+    "steps": [
+      "Step 1: Input XSS payload in chat",
+      "Step 2: Verify script not executed",
+      "Step 3: Verify payload escaped in display"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Security - CORS configuration",
+    "steps": [
+      "Step 1: Make cross-origin request",
+      "Step 2: Verify CORS headers present",
+      "Step 3: Verify allowed origins enforced",
+      "Step 4: Verify invalid origin rejected"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Security - Rate limiting",
+    "steps": [
+      "Step 1: Send rapid requests to endpoint",
+      "Step 2: Verify rate limit enforced",
+      "Step 3: Verify 429 response after limit",
+      "Step 4: Verify Retry-After header present"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Security - API key encryption",
+    "steps": [
+      "Step 1: Store API key in settings",
+      "Step 2: Verify key encrypted in database",
+      "Step 3: Verify key not in logs",
+      "Step 4: Verify key decrypted for use"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Design - Dark theme color scheme",
+    "steps": [
+      "Step 1: Navigate to any page",
+      "Step 2: Verify background is #121212",
+      "Step 3: Verify card background is #1E1E1E",
+      "Step 4: Verify primary text is #FFFFFF",
+      "Step 5: Verify secondary text is #B0B0B0"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Design - Primary brand color",
+    "steps": [
+      "Step 1: Navigate to any page",
+      "Step 2: Verify primary buttons use #1E88E5",
+      "Step 3: Verify links use #1E88E5",
+      "Step 4: Verify active states use #1E88E5"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Design - Financial color coding",
+    "steps": [
+      "Step 1: Navigate to dashboard",
+      "Step 2: Verify positive changes shown in #43A047 (green)",
+      "Step 3: Verify negative changes shown in #E53935 (red)",
+      "Step 4: Verify colors consistent across pages"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Design - Border styling",
+    "steps": [
+      "Step 1: Inspect cards on any page",
+      "Step 2: Verify borders use #333333",
+      "Step 3: Verify border width is 1px",
+      "Step 4: Verify borders consistent"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Design - Corner radius",
+    "steps": [
+      "Step 1: Inspect buttons",
+      "Step 2: Verify border-radius is 4px",
+      "Step 3: Inspect cards",
+      "Step 4: Verify border-radius is 4px",
+      "Step 5: Verify consistent rounded corners"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Typography - Font families",
+    "steps": [
+      "Step 1: Inspect page titles",
+      "Step 2: Verify font is Inter or system-ui",
+      "Step 3: Inspect number displays",
+      "Step 4: Verify font is JetBrains Mono",
+      "Step 5: Inspect body text",
+      "Step 6: Verify font is Inter or -apple-system"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Typography - Font sizes",
+    "steps": [
+      "Step 1: Check h1 headings",
+      "Step 2: Verify size is 2rem (32px)",
+      "Step 3: Check h2 headings",
+      "Step 4: Verify size is 1.5rem (24px)",
+      "Step 5: Check body text",
+      "Step 6: Verify size is 1rem (16px)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Layout - Sidebar structure",
+    "steps": [
+      "Step 1: Navigate to any page",
+      "Step 2: Verify sidebar present on left",
+      "Step 3: Verify sidebar width is 280px",
+      "Step 4: Verify navigation links organized",
+      "Step 5: Verify active page highlighted"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Layout - Main content area",
+    "steps": [
+      "Step 1: Navigate to any page",
+      "Step 2: Verify main content area exists",
+      "Step 3: Verify max-width is 1920px",
+      "Step 4: Verify content centered"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Layout - Responsive breakpoints",
+    "steps": [
+      "Step 1: Resize browser to 640px (sm)",
+      "Step 2: Verify layout adjusts",
+      "Step 3: Resize to 768px (md)",
+      "Step 4: Verify layout adjusts",
+      "Step 5: Resize to 1024px (lg)",
+      "Step 6: Verify layout adjusts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Layout - Mobile responsiveness",
+    "steps": [
+      "Step 1: Set browser width to 375px",
+      "Step 2: Navigate to chat page",
+      "Step 3: Verify sidebar collapses to hamburger",
+      "Step 4: Verify content stacks vertically",
+      "Step 5: Verify text readable"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Components - Card styling",
+    "steps": [
+      "Step 1: Inspect analysis card",
+      "Step 2: Verify background #1E1E1E",
+      "Step 3: Verify border #333333 1px",
+      "Step 4: Verify border-radius 4px",
+      "Step 5: Verify padding consistent"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Components - Button states",
+    "steps": [
+      "Step 1: Inspect primary button",
+      "Step 2: Verify default state styled",
+      "Step 3: Hover over button",
+      "Step 4: Verify hover state visible",
+      "Step 5: Click button",
+      "Step 6: Verify active state visible"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Components - Input fields",
+    "steps": [
+      "Step 1: Inspect chat input",
+      "Step 2: Verify background color",
+      "Step 3: Verify border color",
+      "Step 4: Verify focus state",
+      "Step 5: Verify placeholder text styled"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Components - Loading indicators",
+    "steps": [
+      "Step 1: Send chat message",
+      "Step 2: Verify loading spinner appears",
+      "Step 3: Verify spinner styled consistently",
+      "Step 4: Verify spinner animation smooth"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Components - Modal styling",
+    "steps": [
+      "Step 1: Open signal detail modal",
+      "Step 2: Verify modal overlay present",
+      "Step 3: Verify modal centered",
+      "Step 4: Verify modal styled correctly",
+      "Step 5: Verify close button visible"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Components - Table styling",
+    "steps": [
+      "Step 1: Navigate to signals page",
+      "Step 2: Verify table has headers",
+      "Step 3: Verify rows have hover states",
+      "Step 4: Verify borders consistent",
+      "Step 5: Verify text aligned properly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Components - Tooltip styling",
+    "steps": [
+      "Step 1: Hover over sector in heatmap",
+      "Step 2: Verify tooltip appears",
+      "Step 3: Verify tooltip styled correctly",
+      "Step 4: Verify tooltip positioned well",
+      "Step 5: Verify text readable"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Animations - Page transitions",
+    "steps": [
+      "Step 1: Navigate between pages",
+      "Step 2: Verify transition smooth",
+      "Step 3: Verify no jarring jumps",
+      "Step 4: Verify transition duration < 300ms"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Animations - Chat message appearance",
+    "steps": [
+      "Step 1: Send chat message",
+      "Step 2: Verify message fades in",
+      "Step 3: Verify animation smooth",
+      "Step 4: Verify animation not distracting"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Animations - Loading states",
+    "steps": [
+      "Step 1: Trigger data load",
+      "Step 2: Verify skeleton screens shown",
+      "Step 3: Verify skeleton styled appropriately",
+      "Step 4: Verify skeleton replaced with data"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Accessibility - Focus indicators",
+    "steps": [
+      "Step 1: Tab through interface",
+      "Step 2: Verify focus visible on all elements",
+      "Step 3: Verify focus indicator high contrast",
+      "Step 4: Verify focus order logical"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Accessibility - ARIA labels",
+    "steps": [
+      "Step 1: Inspect buttons",
+      "Step 2: Verify aria-label present where needed",
+      "Step 3: Inspect icons",
+      "Step 4: Verify aria-label describes function"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Accessibility - Color contrast",
+    "steps": [
+      "Step 1: Check text on background",
+      "Step 2: Verify contrast ratio >= 4.5:1",
+      "Step 3: Check secondary text",
+      "Step 4: Verify contrast ratio sufficient"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Charts - ECharts styling",
+    "steps": [
+      "Step 1: View equity curve chart",
+      "Step 2: Verify chart colors match theme",
+      "Step 3: Verify axes styled correctly",
+      "Step 4: Verify grid lines minimal",
+      "Step 5: Verify tooltip styled"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Charts - Responsive chart sizing",
+    "steps": [
+      "Step 1: View chart on desktop",
+      "Step 2: Resize browser window",
+      "Step 3: Verify chart resizes",
+      "Step 4: Verify chart remains readable",
+      "Step 5: Verify no horizontal scroll"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Chat Interface - Message bubbles",
+    "steps": [
+      "Step 1: Send message",
+      "Step 2: Verify user message styled distinctively",
+      "Step 3: Wait for response",
+      "Step 4: Verify AI response styled distinctively",
+      "Step 5: Verify styles consistent"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Chat Interface - Input area",
+    "steps": [
+      "Step 1: View chat input",
+      "Step 2: Verify input at bottom",
+      "Step 3: Verify send button prominent",
+      "Step 4: Verify input auto-focuses",
+      "Step 5: Verify input clears on send"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Dashboard - Card layout",
+    "steps": [
+      "Step 1: Navigate to dashboard",
+      "Step 2: Verify cards in grid layout",
+      "Step 3: Verify cards aligned",
+      "Step 4: Verify gaps consistent",
+      "Step 5: Verify responsive wrapping"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Dashboard - Data visualization hierarchy",
+    "steps": [
+      "Step 1: View dashboard",
+      "Step 2: Verify important data prominent",
+      "Step 3: Verify secondary data less prominent",
+      "Step 4: Verify visual hierarchy guides eye"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Forms - Form validation styling",
+    "steps": [
+      "Step 1: Navigate to settings",
+      "Step 2: Submit invalid data",
+      "Step 3: Verify error message visible",
+      "Step 4: Verify error message in red",
+      "Step 5: Verify invalid field highlighted"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Forms - Form input styling",
+    "steps": [
+      "Step 1: Inspect form inputs",
+      "Step 2: Verify styling consistent",
+      "Step 3: Verify labels aligned",
+      "Step 4: Verify helper text styled"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Navigation - Active state indication",
+    "steps": [
+      "Step 1: Navigate to different pages",
+      "Step 2: Verify current page highlighted in nav",
+      "Step 3: Verify highlight color is primary",
+      "Step 4: Verify highlight style consistent"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Navigation - Breadcrumb trails",
+    "steps": [
+      "Step 1: Navigate to deep page",
+      "Step 2: Verify breadcrumbs visible",
+      "Step 3: Verify breadcrumbs show path",
+      "Step 4: Verify breadcrumb links work"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Empty States - No data display",
+    "steps": [
+      "Step 1: Navigate to empty signals page",
+      "Step 2: Verify empty state message shown",
+      "Step 3: Verify message helpful",
+      "Step 4: Verify illustration or icon present"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Empty States - Error states",
+    "steps": [
+      "Step 1: Trigger API error",
+      "Step 2: Verify error message shown",
+      "Step 3: Verify retry button present",
+      "Step 4: Verify styling consistent"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Consistency - Icon usage",
+    "steps": [
+      "Step 1: Check all icons",
+      "Step 2: Verify icon set consistent",
+      "Step 3: Verify same action has same icon",
+      "Step 4: Verify icons sized consistently"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Consistency - Spacing scale",
+    "steps": [
+      "Step 1: Inspect component padding",
+      "Step 2: Verify spacing follows scale (4, 8, 12, 16, 24, 32)",
+      "Step 3: Verify spacing consistent"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Scrollbars - Custom scrollbar styling",
+    "steps": [
+      "Step 1: Scroll page with long content",
+      "Step 2: Verify scrollbar styled to match theme",
+      "Step 3: Verify scrollbar not default browser",
+      "Step 4: Verify scrollbar width appropriate"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - Complete stock analysis workflow",
+    "steps": [
+      "Step 1: Open application",
+      "Step 2: Login with credentials",
+      "Step 3: Navigate to chat",
+      "Step 4: Input '分析AI板块ROE>20%市值>500亿的股票'",
+      "Step 5: Verify ScreenerAgent executes",
+      "Step 6: Wait for screening results",
+      "Step 7: Verify AnalyzerAgent analyzes top 5",
+      "Step 8: Verify analysis cards displayed",
+      "Step 9: Verify SignalAgent generates signals",
+      "Step 10: Verify signals show buy/sell/hold",
+      "Step 11: Verify signals include target prices",
+      "Step 12: Verify signals include stop losses",
+      "Step 13: Click a signal for details",
+      "Step 14: Verify detail modal opens",
+      "Step 15: Verify all scores visible",
+      "Step 16: Verify reasoning explained",
+      "Step 17: Add stock to watchlist",
+      "Step 18: Navigate to dashboard",
+      "Step 19: Verify stock appears in watchlist",
+      "Step 20: Verify price updates in real-time"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - Data quality issue detection and repair",
+    "steps": [
+      "Step 1: Login to application",
+      "Step 2: Navigate to data monitor",
+      "Step 3: Review overview dashboard",
+      "Step 4: Verify total stocks count",
+      "Step 5: Verify overall completeness rate",
+      "Step 6: Identify stock with low completeness",
+      "Step 7: Click on problem stock",
+      "Step 8: View stock detail page",
+      "Step 9: Identify missing data types",
+      "Step 10: Verify missing dates listed",
+      "Step 11: Click 'Repair Data' button",
+      "Step 12: Verify repair job queued",
+      "Step 13: Monitor repair progress",
+      "Step 14: Wait for repair completion",
+      "Step 15: Refresh stock detail",
+      "Step 16: Verify completeness improved",
+      "Step 17: Return to overview",
+      "Step 18: Verify overall rate improved",
+      "Step 19: Check data logs",
+      "Step 20: Verify repair logged"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - Backtest strategy and validate results",
+    "steps": [
+      "Step 1: Login to application",
+      "Step 2: Navigate to backtest page",
+      "Step 3: Select 'AI Value' strategy",
+      "Step 4: Set date range (2024-01-01 to 2024-12-31)",
+      "Step 5: Set initial capital to 1,000,000",
+      "Step 6: Set max position size to 20%",
+      "Step 7: Set stop loss to 8%",
+      "Step 8: Click 'Run Backtest'",
+      "Step 9: Wait for execution (monitor progress)",
+      "Step 10: Verify results displayed",
+      "Step 11: Review total return",
+      "Step 12: Review annual return",
+      "Step 13: Review max drawdown",
+      "Step 14: Review win rate",
+      "Step 15: Review Sharpe ratio",
+      "Step 16: View equity curve chart",
+      "Step 17: Switch to trade history tab",
+      "Step 18: Verify all trades listed",
+      "Step 19: Review individual trade profits",
+      "Step 20: Export backtest report"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - Portfolio creation and optimization",
+    "steps": [
+      "Step 1: Login to application",
+      "Step 2: Navigate to portfolio page",
+      "Step 3: Verify portfolio empty",
+      "Step 4: Click 'Add Holding'",
+      "Step 5: Add stock 002230 (1000 shares @ 50)",
+      "Step 6: Add stock 000858 (500 shares @ 150)",
+      "Step 7: Add stock 600036 (2000 shares @ 35)",
+      "Step 8: Verify all holdings shown",
+      "Step 9: View portfolio allocation chart",
+      "Step 10: Verify pie chart displays weights",
+      "Step 11: Verify total value calculated",
+      "Step 12: Verify daily P&L calculated",
+      "Step 13: Click 'Optimization' tab",
+      "Step 14: Enter additional candidate stocks",
+      "Step 15: Select risk preference 'Moderate'",
+      "Step 16: Click 'Calculate Optimal Weights'",
+      "Step 17: Wait for calculation",
+      "Step 18: View optimal weights suggested",
+      "Step 19: Review expected return",
+      "Step 20: Review expected risk",
+      "Step 21: View efficient frontier chart",
+      "Step 22: Apply optimization recommendations"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - Multi-agent collaborative analysis",
+    "steps": [
+      "Step 1: Login to application",
+      "Step 2: Open chat interface",
+      "Step 3: Input complex query: '帮我找AI板块低估的股票，分析前5只，如果有交易机会告诉我买卖点'",
+      "Step 4: Verify Orchestrator routes query",
+      "Step 5: Verify ScreenerAgent filters AI stocks",
+      "Step 6: Verify ScreenerAgent applies valuation filter",
+      "Step 7: Wait for screening results (top 5)",
+      "Step 8: Verify AnalyzerAgent receives stock list",
+      "Step 9: Verify AnalyzerAgent fetches financial data",
+      "Step 10: Verify AnalyzerAgent analyzes sentiment",
+      "Step 11: Verify AnalyzerAgent calculates valuation",
+      "Step 12: Wait for analysis completion",
+      "Step 13: Verify SignalAgent receives analysis",
+      "Step 14: Verify SignalAgent generates signals",
+      "Step 15: Verify target prices calculated",
+      "Step 16: Verify stop losses set",
+      "Step 17: Verify ValidatorAgent validates signals",
+      "Step 18: Verify validation checks data freshness",
+      "Step 19: Verify validation checks risk parameters",
+      "Step 20: View final aggregated results",
+      "Step 21: Verify results in structured cards",
+      "Step 22: Verify each card shows complete analysis",
+      "Step 23: Verify trading recommendations clear",
+      "Step 24: Verify confidence levels indicated",
+      "Step 25: Verify risk warnings present"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - Real-time signal monitoring and action",
+    "steps": [
+      "Step 1: Login to application",
+      "Step 2: Navigate to signals page",
+      "Step 3: Verify current signals loaded",
+      "Step 4: Filter for 'buy' signals only",
+      "Step 5: Review high confidence buy signal",
+      "Step 6: Click signal for detail",
+      "Step 7: Review analysis scores",
+      "Step 8: Review entry price",
+      "Step 9: Review target price",
+      "Step 10: Review stop loss",
+      "Step 11: Review position size recommendation",
+      "Step 12: Return to signals list",
+      "Step 13: Navigate to portfolio",
+      "Step 14: Add stock from signal to portfolio",
+      "Step 15: Enter purchase details",
+      "Step 16: Save holding",
+      "Step 17: Verify holding in portfolio",
+      "Step 18: Monitor price updates",
+      "Step 19: Return to signals page",
+      "Step 20: Check for new signals",
+      "Step 21: Verify signal timestamp updates",
+      "Step 22: Track signal performance",
+      "Step 23: Review historical signal accuracy",
+      "Step 24: Filter signals by outcome",
+      "Step 25: Export signal report"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - Cross-market stock comparison",
+    "steps": [
+      "Step 1: Login to application",
+      "Step 2: Open chat interface",
+      "Step 3: Input '比较腾讯控股(00700)和Facebook(META)的投资价值'",
+      "Step 4: Verify system recognizes HK stock",
+      "Step 5: Verify system recognizes US stock",
+      "Step 6: Verify data fetched from appropriate sources",
+      "Step 7: Wait for analysis",
+      "Step 8: Verify Tencent analysis in HKD",
+      "Step 9: Verify META analysis in USD",
+      "Step 10: Verify CNY equivalent shown for both",
+      "Step 11: Compare financial metrics",
+      "Step 12: Compare valuation metrics",
+      "Step 13: Compare sentiment scores",
+      "Step 14: Review comparison table",
+      "Step 15: Verify side-by-side display",
+      "Step 16: Verify currency labels clear",
+      "Step 17: Check exchange rate display",
+      "Step 18: Verify rates current",
+      "Step 19: Review investment recommendation",
+      "Step 20: Verify recommendation considers currency",
+      "Step 21: Verify risk assessment for each market",
+      "Step 22: Add to watchlist for monitoring",
+      "Step 23: Navigate to dashboard",
+      "Step 24: Verify both stocks in watchlist",
+      "Step 25: Verify prices update correctly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - System configuration and monitoring",
+    "steps": [
+      "Step 1: Login as admin user",
+      "Step 2: Navigate to settings page",
+      "Step 3: Verify API key configuration section",
+      "Step 4: Update DeepSeek API key",
+      "Step 5: Verify key encrypted",
+      "Step 6: Navigate to data source settings",
+      "Step 7: Verify primary source: Tushare",
+      "Step 8: Verify fallback source: AKShare",
+      "Step 9: Toggle to use AKShare as primary",
+      "Step 10: Save configuration",
+      "Step 11: Navigate to Agent settings",
+      "Step 12: Adjust ScreenerAgent max results to 30",
+      "Step 13: Adjust SignalAgent risk tolerance",
+      "Step 14: Save agent parameters",
+      "Step 15: Navigate to data monitor",
+      "Step 16: Check current data quality",
+      "Step 17: Review collection logs",
+      "Step 18: Verify data source switch logged",
+      "Step 19: Navigate to system status",
+      "Step 20: Verify all services healthy",
+      "Step 21: Check Agent status",
+      "Step 22: Verify all 5 agents active",
+      "Step 23: Review recent system logs",
+      "Step 24: Check for errors",
+      "Step 25: Verify system performing optimally"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - Risk management and portfolio health",
+    "steps": [
+      "Step 1: Login to application",
+      "Step 2: Navigate to portfolio page",
+      "Step 3: Add multiple holdings across sectors",
+      "Step 4: Add 30% tech stocks",
+      "Step 5: Add 40% financial stocks",
+      "Step 6: Add 30% healthcare stocks",
+      "Step 7: View current allocation",
+      "Step 8: Click 'Risk Assessment'",
+      "Step 9: Wait for RiskAgent analysis",
+      "Step 10: Review risk level",
+      "Step 11: Review correlation analysis",
+      "Step 12: Review sector concentration",
+      "Step 13: Identify high correlation stocks",
+      "Step 14: Review optimization suggestions",
+      "Step 15: View VaR calculation",
+      "Step 16: Check portfolio beta",
+      "Step 17: Apply suggested rebalancing",
+      "Step 18: Verify new allocation",
+      "Step 19: Re-run risk assessment",
+      "Step 20: Verify risk reduced",
+      "Step 21: Set up risk alerts",
+      "Step 22: Configure concentration threshold",
+      "Step 23: Configure drawdown alert",
+      "Step 24: Save alert settings",
+      "Step 25: Monitor for alerts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - User session and authentication flow",
+    "steps": [
+      "Step 1: Open application in browser",
+      "Step 2: Verify redirect to login page",
+      "Step 3: Enter username",
+      "Step 4: Enter password",
+      "Step 5: Click login button",
+      "Step 6: Verify authentication",
+      "Step 7: Verify JWT token stored",
+      "Step 8: Verify redirect to dashboard",
+      "Step 9: Navigate to chat",
+      "Step 10: Send message",
+      "Step 11: Verify chat session created",
+      "Step 12: Navigate to settings",
+      "Step 13: Update preferences",
+      "Step 14: Logout",
+      "Step 15: Verify token cleared",
+      "Step 16: Verify redirect to login",
+      "Step 17: Login again",
+      "Step 18: Verify preferences restored",
+      "Step 19: Verify chat history available",
+      "Step 20: Check session persistence",
+      "Step 21: Close browser",
+      "Step 22: Reopen application",
+      "Step 23: Verify auto-login (if token valid)",
+      "Step 24: Navigate to previous pages",
+      "Step 25: Verify state maintained"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - Error recovery and resilience",
+    "steps": [
+      "Step 1: Login to application",
+      "Step 2: Navigate to chat",
+      "Step 3: Start complex analysis query",
+      "Step 4: While processing, disconnect network",
+      "Step 5: Verify error message shown",
+      "Step 6: Verify graceful degradation",
+      "Step 7: Reconnect network",
+      "Step 8: Verify WebSocket reconnects",
+      "Step 9: Retry the query",
+      "Step 10: Verify query succeeds",
+      "Step 11: Navigate to data monitor",
+      "Step 12: Mock data source failure",
+      "Step 13: Trigger data collection",
+      "Step 14: Verify fallback to secondary source",
+      "Step 15: Verify data retrieved",
+      "Step 16: Verify switch logged",
+      "Step 17: Mock Agent timeout",
+      "Step 18: Send Agent-dependent query",
+      "Step 19: Verify timeout handled",
+      "Step 20: Verify partial results shown",
+      "Step 21: Verify user informed",
+      "Step 22: Mock database connection issue",
+      "Step 23: Attempt portfolio operation",
+      "Step 24: Verify error caught",
+      "Step 25: Verify friendly error message"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Comprehensive E2E - Performance and scalability test",
+    "steps": [
+      "Step 1: Open application",
+      "Step 2: Login",
+      "Step 3: Monitor page load time",
+      "Step 4: Verify initial load < 2s",
+      "Step 5: Navigate to dashboard",
+      "Step 6: Monitor data load time",
+      "Step 7: Verify data load < 1s",
+      "Step 8: Navigate to chat",
+      "Step 9: Send complex screening query",
+      "Step 10: Monitor response time",
+      "Step 11: Verify response < 5s",
+      "Step 12: Send multi-agent query",
+      "Step 13: Monitor agent execution time",
+      "Step 14: Verify each agent < 3s",
+      "Step 15: Navigate to signals",
+      "Step 16: Monitor render time",
+      "Step 17: Verify smooth rendering",
+      "Step 18: Check WebSocket latency",
+      "Step 19: Verify < 100ms",
+      "Step 20: Test with 50 signals",
+      "Step 21: Verify scrolling smooth",
+      "Step 22: Navigate to data monitor",
+      "Step 23: Load large dataset",
+      "Step 24: Verify pagination works",
+      "Step 25: Verify no performance degradation"
+    ],
+    "passes": false
+  }
+]
