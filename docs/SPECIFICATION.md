@@ -1,0 +1,702 @@
+# 智能投研助手系统 (AI Investment Assistant)
+
+## 一句话描述
+
+基于技术面、舆情面和财报面的多维度分析，通过多智能体协作，为投资者提供股票筛选、深度分析、交易信号生成和风险管理的智能投研助手系统。
+
+## 技术栈
+
+### 前端
+- 框架：React 18
+- 语言：TypeScript
+- 样式：Tailwind CSS
+- UI组件库：Ant Design
+- 图表：ECharts
+- 状态管理：Zustand
+- 路由：React Router 6
+- HTTP客户端：Axios
+- WebSocket：Socket.io-client
+
+### 后端
+- 框架：FastAPI
+- 语言：Python 3.10+
+- 异步：asyncio/aiohttp
+- WebSocket：websockets
+- 任务队列：Redis Queue
+- API文档：Swagger/OpenAPI
+
+### AI/LLM
+- 主要LLM：DeepSeek API
+- 备用LLM：OpenAI GPT-4
+- Agent框架：LangGraph / LangChain
+- 向量数据库：ChromaDB
+
+### 数据库
+- 关系数据库：PostgreSQL 15
+- 缓存数据库：Redis 7
+- 向量数据库：ChromaDB
+- 时序数据：Redis TimeSeries (可选)
+
+### 数据源
+
+#### 历史数据要求
+- **时间范围**: 2013-01-01 至今 (约13年历史数据)
+- **数据完整率**: ≥ 95%
+- **数据质量**: 必须重新下载，不使用现有不完整数据
+- **数据类型**: 日线行情、分钟级行情（近1年）、技术指标、财报、舆情
+
+#### 数据源配置
+- **实时行情**: Tushare Pro (主要) / AKShare (备用)
+- **历史数据**: Baostock (主要) / AKShare (备用)
+  - A股: 从2013-01-01开始完整下载
+  - 港股: 从2015-01-01开始下载
+  - 美股: 从2015-01-01开始下载
+- **财报数据**: 东方财富 API / 新浪财经
+- **舆情数据**: 财联社 API / 雪球 API / 新浪新闻
+
+### 部署
+- 容器化：Docker + Docker Compose
+- 反向代理：Nginx
+- 进程管理：systemd / supervisord
+
+## 用户角色
+
+### 普通用户 (Investor)
+- 使用AI聊天助手进行选股和分析
+- 查看实时交易信号
+- 监控数据质量
+- 运行回测分析
+- 查看投资组合
+
+### 管理员 (Admin)
+- 所有普通用户权限
+- 管理数据采集调度
+- 查看系统日志
+- 配置Agent参数
+- 管理用户权限
+
+## 核心功能
+
+### P0 - 必须有（MVP）
+
+#### 1. AI聊天助手 (AI Chat Assistant)
+
+**功能描述:**
+用户通过自然语言对话，进行股票筛选、分析和交易信号查询。系统通过多智能体协作理解用户意图，调用相应的Agent完成任务。
+
+**用户流程:**
+1. 用户在聊天界面输入问题："帮我找AI板块ROE>15%的股票"
+2. 系统识别意图为"选股筛选"
+3. ScreenerAgent执行筛选，返回符合条件的股票列表
+4. 系统自动调用AnalyzerAgent对top股票进行深度分析
+5. SignalAgent生成交易信号（如果有买入机会）
+6. ValidatorAgent验证信号合理性
+7. 系统以结构化卡片形式展示分析结果和交易建议
+
+**测试文件:**
+- 前端单元测试: `frontend/src/components/__tests__/MessageList.test.tsx`
+- 前端E2E测试: `frontend/e2e/chat.spec.ts`
+- 后端API测试: `backend/tests/__tests__/chat-api.test.py`
+- Agent测试: `backend/tests/__tests__/agents/test_orchestrator.test.py`
+
+**API测试场景:**
+1. **成功场景**
+   - 输入: 有效用户查询
+   - 期望: HTTP 200, 返回分析结果
+   - 验证: Agent正确执行，返回结构化数据
+
+2. **错误场景**
+   - 输入: 空消息或无效格式
+   - 期望: HTTP 400, 错误信息包含"无效的查询"
+
+3. **超时场景**
+   - Agent执行超过30秒
+   - 期望: 返回部分结果或超时提示
+
+**E2E测试步骤:**
+1. 打开聊天页面
+2. 输入"分析科大讯飞"
+3. 期望: 显示"正在分析..."加载状态
+4. 期望: 返回分析卡片，包含财务/舆情/估值评分
+5. 期望: 如果有交易信号，显示买卖建议卡片
+6. 点击"查看详细分析"
+7. 期望: 跳转到详细分析页面或展开更多内容
+
+**验收标准:**
+- [ ] 单元测试通过
+- [ ] API集成测试通过
+- [ ] E2E测试通过
+- [ ] 5个Agent都能正确响应
+- [ ] WebSocket流式响应正常
+
+#### 2. 多智能体系统 (Multi-Agent System)
+
+**功能描述:**
+5个独立的Agent协同工作，每个Agent专注于特定任务，通过Orchestrator协调完成复杂查询。
+
+**Agent列表:**
+
+**ScreenerAgent (选股Agent)**
+- 功能: 根据用户条件筛选股票
+- 输入: 筛选条件（板块、市值、ROE、PE等）
+- 输出: 符合条件的股票列表（最多50只）
+- 工具: 板块过滤、基本面过滤、技术面过滤
+
+**AnalyzerAgent (分析Agent)**
+- 功能: 对单只/多只股票进行多维度分析
+- 输入: 股票代码
+- 输出: 财务评分、舆情评分、估值评分、综合评分
+- 工具: 财报解析、舆情分析、估值计算
+
+**SignalAgent (信号Agent)**
+- 功能: 综合分析结果生成交易信号
+- 输入: 分析评分、实时价格
+- 输出: 买入/卖出/观望建议，目标价、止损价、仓位
+- 工具: 技术指标、风控规则
+
+**ValidatorAgent (审核Agent)**
+- 功能: 验证交易信号的合理性
+- 输入: 交易信号
+- 输出: 验证结果、调整建议
+- 检查项: 数据时效、逻辑自洽、风险边界、市场环境
+
+**RiskAgent (风控Agent)**
+- 功能: 评估投资组合风险
+- 输入: 持仓列表
+- 输出: 风险等级、优化建议
+- 工具: 相关性分析、VaR计算
+
+**测试文件:**
+- 单元测试: `backend/tests/__tests__/agents/test_*.py`
+- 集成测试: `backend/tests/__tests__/agents/test_orchestrator.test.py`
+
+**测试场景:**
+1. 每个Agent独立功能测试
+2. Agent之间协作流程测试
+3. 错误处理和fallback测试
+4. Agent响应时间测试（<5秒）
+
+**验收标准:**
+- [ ] 所有5个Agent功能正常
+- [ ] Orchestrator正确路由和协调
+- [ ] 错误处理机制完善
+- [ ] Agent响应时间在可接受范围内
+
+#### 3. 交易信号生成 (Trading Signal Generation)
+
+**功能描述:**
+基于多维度分析，生成具体的交易信号，包括操作方向、目标价格、止损价格和仓位建议。
+
+**信号类型:**
+- **买入信号**: 包含当前价、目标价、止损价、建议仓位、买入理由
+- **卖出信号**: 包含当前价、卖出理由、止盈/止损触发
+- **观望信号**: 包含观望原因、关注条件
+
+**信号示例:**
+```
+📊 科大讯飞 (002230) 买入信号
+
+💡 分析结论:
+• 财务: 优秀 (ROE 18.5%, 营收+28%)
+• 舆情: 积极 (发布教育大模型, 市场反响热烈)
+• 估值: 合理 (PE 45x, 低于5年历史中位)
+
+📈 交易建议:
+• 操作: 买入
+• 当前价: ¥48.50
+• 目标价: ¥55.00 (+13%)
+• 止损价: ¥44.00 (-9%)
+• 建议仓位: 15%
+
+⚠️ 风险提示:
+• AI板块短期涨幅较大, 注意回调风险
+• 大盘震荡, 建议分批建仓
+```
+
+**测试文件:**
+- 单元测试: `backend/tests/__tests__/agents/test_signal_agent.test.py`
+- API测试: `backend/tests/__tests__/api/test_signals_api.test.py`
+
+**验收标准:**
+- [ ] 信号生成逻辑正确
+- [ ] 价格计算准确
+- [ ] 风控规则生效
+- [ ] 信号展示清晰完整
+
+### P1 - 应该有
+
+#### 4. 数据质量监控 (Data Quality Monitor)
+
+**功能描述:**
+监控系统采集数据的完整性和准确性，提供数据完整性报告和自动修复功能。
+
+**核心指标:**
+- 股票总数和完整率
+- 按市场分组的完整率
+- 按数据类型的完整率（日线、分钟、财报、舆情）
+- 问题股票列表
+- 数据采集日志
+
+**功能:**
+- 整体数据概览仪表板
+- 单股票数据详细视图
+- 数据完整性分布图
+- 一键修复缺失数据
+- 批量修复功能
+- 数据采集日志查询
+
+**测试文件:**
+- API测试: `backend/tests/__tests__/api/test_data_quality_api.test.py`
+- 服务测试: `backend/tests/__tests__/services/test_data_quality_service.test.py`
+
+**验收标准:**
+- [ ] 数据完整率计算准确
+- [ ] 数据修复功能正常
+- [ ] 监控页面实时更新
+- [ ] 日志记录完整
+
+#### 5. 多市场支持 (Multi-Market Support)
+
+**功能描述:**
+支持A股、港股、美股三个市场的数据采集和分析。
+
+**功能:**
+- 市场自动识别（根据股票代码）
+- 分市场数据采集调度
+- 统一的数据格式和接口
+- 汇率转换（用于港股/美股）
+- 分市场数据统计
+
+**测试文件:**
+- 采集测试: `backend/tests/__tests__/data/test_multi_market.test.py`
+
+**验收标准:**
+- [ ] 三个市场数据采集正常
+- [ ] 市场识别准确
+- [ ] 数据格式统一
+- [ ] 汇率转换正确
+
+#### 6. 数据仪表板 (Data Dashboard)
+
+**功能描述:**
+实时监控市场行情、交易信号、持仓情况的可视化仪表板。
+
+**组件:**
+- 实时行情卡片（主要指数、涨跌统计）
+- 实时信号监控（时间线展示）
+- 持仓组合分析（饼图、柱状图）
+- 板块热度排行
+- 自选股监控
+
+**测试文件:**
+- 前端测试: `frontend/src/pages/__tests__/Dashboard.test.tsx`
+- E2E测试: `frontend/e2e/dashboard.spec.ts`
+
+**验收标准:**
+- [ ] 实时数据更新正常
+- [ ] 图表渲染正确
+- [ ] WebSocket连接稳定
+- [ ] 页面响应式适配
+
+### P2 - 可以有
+
+#### 7. 策略回测 (Backtesting)
+
+**功能描述:**
+基于历史数据验证交易策略的有效性。
+
+**功能:**
+- 选择策略和时间范围
+- 设置回测参数（初始资金、风控规则）
+- 运行回测
+- 查看回测报告（收益率、最大回撤、胜率等）
+
+#### 8. 投资组合优化 (Portfolio Optimization)
+
+**功能描述:**
+基于现代投资组合理论，优化资产配置。
+
+**功能:**
+- 输入候选股票池
+- 设置风险偏好
+- 计算最优权重
+- 显示有效前沿
+
+#### 9. 移动端适配 (Mobile Responsive)
+
+**功能描述:**
+优化移动端浏览体验。
+
+## 页面结构
+
+- `/` - 仪表板首页（实时监控）
+- `/chat` - AI聊天助手
+- `/signals` - 交易信号监控
+- `/data-monitor` - 数据质量监控
+- `/backtest` - 策略回测
+- `/portfolio` - 投资组合
+- `/settings` - 系统设置
+
+## UI 设计规范
+
+### 颜色
+- 主色：#1E88E5 (专业蓝)
+- 次色：#43A047 (涨-绿)
+- 警告色：#E53935 (跌-红)
+- 背景：#121212 (深色背景)
+- 卡片背景：#1E1E1E
+- 文字主色：#FFFFFF
+- 文字次色：#B0B0B0
+- 边框色：#333333
+
+### 布局
+- 最大宽度：1920px
+- 侧边栏宽度：280px
+- 响应式断点：sm(640px) / md(768px) / lg(1024px) / xl(1280px) / 2xl(1536px)
+
+### 字体
+- 标题：Inter, system-ui
+- 数据/数字：JetBrains Mono, monospace
+- 正文：Inter, -apple-system
+
+### 组件风格
+- 圆角：4px（金融专业风格，不宜过圆）
+- 阴影：minimal
+- 动画：流畅但克制
+
+## 测试要求
+
+### 测试框架
+- **后端测试**: pytest + pytest-asyncio
+- **前端测试**: Vitest + React Testing Library
+- **E2E测试**: Playwright
+- **覆盖率目标**: ≥ 70%
+
+### 配置验证测试
+
+**测试文件:** `backend/__tests__/config_validation.test.py`, `frontend/__tests__/config_validation.test.ts`
+
+**必须验证:**
+- 后端端口配置正确（8888）
+- 前端API_URL指向正确的后端地址
+- CORS配置允许前端origin
+- 数据库连接字符串正确
+- LLM API Key已配置
+- Tushare API Key已配置
+
+### API集成测试要求
+
+每个API端点必须包含：
+1. 成功场景测试
+2. 无效数据测试 (400)
+3. 未授权测试 (401)
+4. 权限不足测试 (403)
+5. 资源不存在测试 (404)
+
+### E2E测试要求
+
+P0功能必须包含E2E测试：
+1. AI聊天助手完整对话流程
+2. 交易信号生成和展示
+3. Agent协作流程验证
+4. 数据质量监控页面
+
+### 测试覆盖率要求
+
+- **单元测试**: 所有业务逻辑函数
+- **API测试**: 100%端点覆盖
+- **E2E测试**: 100% P0功能覆盖
+- **关键模块**: ≥ 90% (Agent系统, 信号生成, 数据采集)
+
+## 非功能性需求
+
+### 性能
+- 页面首屏加载 < 2秒
+- API响应时间 < 500ms (Agent调用可能需要3-5秒)
+- 数据采集并行处理，支持5000+股票
+- WebSocket消息延迟 < 100ms
+
+### 安全
+- API密钥加密存储
+- JWT token认证
+- SQL注入防护
+- XSS防护
+- CORS配置正确
+- 速率限制（防止API滥用）
+
+### 可用性
+- 系统可用性 ≥ 99%
+- 数据完整率 ≥ 95%
+- Agent失败降级机制
+- 数据采集自动重试
+
+### 可扩展性
+- Agent可插拔架构
+- 数据源可配置
+- 支持水平扩展
+
+## 验收标准
+
+- 所有 P0 功能正常工作
+- 5个Agent协同工作正常
+- 用户流程端到端测试通过
+- 符合 UI 设计规范（Professional Finance风格）
+- 无控制台错误
+- 测试覆盖率 ≥ 70%
+- 数据质量监控功能正常
+
+## 不在范围内
+
+- 实盘自动交易（仅提供信号，不执行交易）
+- 社交功能（用户间交流、分享）
+- 移动App（仅Web应用）
+- 期货/期权/衍生品支持（仅股票）
+- 国际化（仅中文）
+
+## 数据架构
+
+### PostgreSQL 表结构
+
+**stocks (股票基础表)**
+```sql
+CREATE TABLE stocks (
+    code VARCHAR(20) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    market VARCHAR(20) NOT NULL,  -- SH, SZ, HK, US
+    sector VARCHAR(100),
+    market_cap DECIMAL(20, 2),
+    list_date DATE,
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+**financial_statements (财报表)**
+```sql
+CREATE TABLE financial_statements (
+    id SERIAL PRIMARY KEY,
+    stock_code VARCHAR(20) REFERENCES stocks(code),
+    report_date DATE NOT NULL,
+    report_type VARCHAR(10),
+    revenue DECIMAL(20, 2),
+    profit DECIMAL(20, 2),
+    roe DECIMAL(10, 4),
+    debt_ratio DECIMAL(10, 4),
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(stock_code, report_date, report_type)
+);
+```
+
+**news_sentiment (舆情表)**
+```sql
+CREATE TABLE news_sentiment (
+    id SERIAL PRIMARY KEY,
+    stock_code VARCHAR(20) REFERENCES stocks(code),
+    title VARCHAR(500),
+    content TEXT,
+    sentiment DECIMAL(5, 2),
+    keywords VARCHAR(200)[],
+    publish_time TIMESTAMP,
+    source VARCHAR(100),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+**data_quality_log (数据质量日志表)**
+```sql
+CREATE TABLE data_quality_log (
+    id SERIAL PRIMARY KEY,
+    stock_code VARCHAR(20),
+    data_type VARCHAR(50),
+    check_date DATE DEFAULT CURRENT_DATE,
+    total_expected INT,
+    total_actual INT,
+    completeness_rate DECIMAL(5, 2),
+    missing_dates DATE[],
+    status VARCHAR(20),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Redis 缓存结构
+
+```
+# 实时价格
+price:{code}:1m → JSON {timestamp, open, high, low, close, volume}
+
+# 技术指标
+indicator:{code} → JSON {MA5, MA20, MACD, RSI, BOLL}
+
+# 最新信号
+signal:{code} → JSON {action, price, target, stop_loss, confidence}
+
+# 板块热度
+sector:{sector_name}:heat → JSON {score, rank, change}
+
+# 聊天会话
+chat:session:{session_id} → JSON {messages, context, metadata}
+```
+
+## API 端点规范
+
+### 聊天相关
+- `POST /api/chat` - 发送聊天消息
+- `WebSocket /api/chat/stream` - 流式聊天
+- `GET /api/chat/sessions` - 获取会话列表
+- `GET /api/chat/sessions/{id}` - 获取会话详情
+
+### 信号相关
+- `POST /api/signals/generate` - 生成交易信号
+- `GET /api/signals/realtime` - 获取实时信号
+- `GET /api/signals/history` - 获取历史信号
+
+### 数据质量相关
+- `GET /api/data-quality/overview` - 数据质量概览
+- `GET /api/data-quality/by-market` - 按市场分组
+- `GET /api/data-quality/stock/{code}/detail` - 股票数据详情
+- `POST /api/data-quality/stock/{code}/repair` - 修复数据
+
+### Agent相关
+- `POST /api/agents/screen` - 股票筛选
+- `POST /api/agents/analyze` - 股票分析
+- `GET /api/agents/status` - Agent状态
+
+### 系统相关
+- `GET /health` - 健康检查
+- `GET /api/system/status` - 系统状态
+- `GET /api/system/logs` - 系统日志
+
+## Agent 调用流程
+
+```
+用户输入 → Orchestrator.route()
+    ↓
+意图识别 → 确定需要调用的Agent
+    ↓
+并行/串行调用Agent
+    ├─ ScreenerAgent (筛选)
+    ├─ AnalyzerAgent (分析)
+    ├─ SignalAgent (信号)
+    ├─ ValidatorAgent (验证)
+    └─ RiskAgent (风控)
+    ↓
+结果聚合 → 生成最终回复
+    ↓
+返回用户
+```
+
+## 数据采集与质量要求
+
+### 历史数据采集范围
+
+**A股市场:**
+- 时间范围: 2013-01-01 至今
+- 股票数量: 约5,000只
+- 数据类型: 日线行情、复权数据
+- 采集频率: 系统初始化时一次性采集，之后每日增量更新
+
+**港股市场:**
+- 时间范围: 2015-01-01 至今
+- 股票数量: 约2,500只
+- 数据类型: 日线行情、复权数据
+- 数据源: 港股专用API
+
+**美股市场:**
+- 时间范围: 2015-01-01 至今
+- 股票数量: 约8,000只 (主要中概股+热门股)
+- 数据类型: 日线行情
+- 数据源: 美股专用API (如Yahoo Finance)
+
+### 数据完整性要求
+
+**最低标准:**
+- 整体完整率: ≥ 95%
+- 单只股票完整率: ≥ 90%
+- 关键股票完整率: ≥ 98% (市值前500只)
+
+**数据质量检查:**
+- 缺失天数 < 5% (对于活跃交易日)
+- 连续缺失 < 10天 (停牌期间除外)
+- 技术指标计算完整性 100%
+
+### 数据采集策略
+
+**首次采集 (系统初始化):**
+```
+任务: 首次全量数据下载
+范围: 2013-01-01 至今天
+方式: 并行下载，多源备份
+目标: 95%以上完整率
+预计时间: 6-12小时 (取决于网络和API限制)
+```
+
+**增量更新 (每日):**
+```
+时间: 每日收盘后 (15:30, 21:30)
+任务: 下载当日数据，计算技术指标
+方式: 增量追加到现有数据
+验证: 检查数据完整性和一致性
+```
+
+**数据修复 (按需):**
+```
+触发: 用户手动触发 或 系统检测到数据缺失
+任务: 从备用源下载缺失数据
+范围: 仅缺失日期段
+优先级: 高关注股票优先修复
+```
+
+### 数据验证规则
+
+**必须验证:**
+1. **价格连续性**: 不出现异常跳空 (除停牌复牌)
+2. **成交量合理性**: 不出现异常零值或极端值
+3. **复权正确性**: 前后复权数据一致性
+4. **指标完整性**: MA/MACD/RSI等指标可计算
+5. **时间对齐**: 不同市场数据时间正确对齐
+
+**数据质量评分:**
+- 优秀: 完整率 ≥ 98%
+- 良好: 完整率 ≥ 95%
+- 中等: 完整率 ≥ 90%
+- 较差: 完整率 < 90% (需要修复)
+
+## 错误处理
+
+### Agent失败处理
+- 单个Agent失败不影响其他Agent
+- 返回部分结果 + 错误说明
+- 记录错误日志
+
+### 数据源失败处理
+- 主数据源失败自动切换到备用源
+- 记录切换日志
+- 通知用户数据来源
+
+### API错误处理
+- 统一错误格式
+- 友好的错误提示
+- 详细的错误日志
+
+## 开发约定
+
+### 代码规范
+- Python: PEP 8
+- TypeScript: ESLint + Prettier
+- Git Conventional Commits
+
+### 分支策略
+- `main` - 生产环境
+- `develop` - 开发环境
+- `feature/*` - 功能分支
+- `hotfix/*` - 紧急修复
+
+### 提交规范
+- `feat:` 新功能
+- `fix:` 修复bug
+- `docs:` 文档
+- `test:` 测试
+- `refactor:` 重构
+
+---
+生成时间: 2026-02-17
+版本: v1.0
