@@ -54,3 +54,6 @@ nul
 *.bak
 tmp/
 tmpclaude*
+
+# Git Worktrees
+.worktrees/
