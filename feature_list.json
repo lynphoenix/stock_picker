@@ -95,7 +95,7 @@
       "Step 4: Verify error message contains '无效的查询'",
       "Step 5: Verify no API call made"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -107,7 +107,7 @@
       "Step 4: Verify chat history restored",
       "Step 5: Verify previous messages visible"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -208,7 +208,7 @@
       "Step 5: Verify financial_score includes debt ratio",
       "Step 6: Verify score calculation documented"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -220,7 +220,7 @@
       "Step 4: Verify sentiment_score includes trend analysis",
       "Step 5: Verify score between 0-100"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -232,7 +232,7 @@
       "Step 4: Verify valuation_score compares to historical",
       "Step 5: Verify valuation_score compares to sector"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

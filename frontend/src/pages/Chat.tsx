@@ -36,6 +36,37 @@ export default function ChatPage() {
     scrollToBottom()
   }, [messages])
 
+  // Load session from localStorage on mount
+  useEffect(() => {
+    const savedSessionId = localStorage.getItem('chat_session_id')
+    if (savedSessionId) {
+      // Restore chat history
+      fetchChatHistory(savedSessionId)
+    }
+  }, [])
+
+  // Save session_id to localStorage when it changes
+  useEffect(() => {
+    if (sessionId) {
+      localStorage.setItem('chat_session_id', sessionId)
+    }
+  }, [sessionId])
+
+  const fetchChatHistory = async (sid: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/chat/chat/history/${sid}`)
+      if (response.ok) {
+        const history = await response.json()
+        if (history && history.length > 0) {
+          setMessages(history)
+          setSessionId(sid)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load chat history:', error)
+    }
+  }
+
   const sendMessage = async (content: string) => {
     if (!content.trim()) return
 

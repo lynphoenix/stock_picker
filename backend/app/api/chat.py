@@ -56,6 +56,10 @@ async def chat(request: ChatRequest):
     """
     Process chat message and return AI response
     """
+    # Validate message is not empty
+    if not request.message or not request.message.strip():
+        raise HTTPException(status_code=400, detail="无效的查询: 消息不能为空")
+
     # Generate session_id if not provided
     session_id = request.session_id or str(uuid.uuid4())
 
