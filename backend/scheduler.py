@@ -66,11 +66,10 @@ class DataScheduler:
             print("⏸️  今日非交易日，跳过采集")
             return
 
-        # 执行采集
+        # 执行采集（使用同步版本）
         try:
-            result = self.fetcher.fetch_daily_data(
-                retry_times=3,
-                retry_interval=10
+            result = self.fetcher.fetch_daily_data_sync(
+                retry_times=3
             )
 
             self.last_result = result
@@ -94,7 +93,11 @@ class DataScheduler:
         # 显示所有任务
         jobs = self.scheduler.get_jobs()
         for job in jobs:
-            print(f"  - {job.name}: {job.next_run_time}")
+            try:
+                next_run = job.next_run_time
+                print(f"  - {job.name}: {next_run}")
+            except Exception:
+                print(f"  - {job.name}")
 
     def stop(self):
         """停止调度器"""
@@ -105,13 +108,21 @@ class DataScheduler:
         """获取调度器状态"""
         jobs = self.scheduler.get_jobs()
 
-        return {
-            "running": self.scheduler.running,
-            "jobs": [{
+        job_list = []
+        for job in jobs:
+            try:
+                next_run = job.next_run_time.isoformat() if job.next_run_time else None
+            except Exception:
+                next_run = None
+            job_list.append({
                 "id": job.id,
                 "name": job.name,
-                "next_run": job.next_run_time.isoformat() if job.next_run_time else None
-            } for job in jobs],
+                "next_run": next_run
+            })
+
+        return {
+            "running": self.scheduler.running,
+            "jobs": job_list,
             "last_result": self.last_result
         }
 

@@ -168,8 +168,48 @@ async def trigger_fetch_now(background_tasks: BackgroundTasks):
 
         return {
             "task_id": task_id,
-            "status": "running",
+            "status": "started",
             "message": "数据采集已启动"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/fetch/status/{task_id}", response_model=dict)
+async def get_fetch_status(task_id: str):
+    """
+    获取采集进度
+
+    Args:
+        task_id: 任务ID
+
+    Returns:
+        进度信息
+    """
+    status = service.get_fetch_status(task_id)
+    if not status:
+        raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+    return status
+
+
+@router.get("/fetch/stats", response_model=dict)
+async def get_fetch_stats():
+    """
+    获取采集统计
+
+    Returns:
+        统计信息
+    """
+    return service.get_fetch_stats()
+
+
+@router.post("/fetch/stop", response_model=dict)
+async def stop_fetch():
+    """
+    停止采集
+
+    Returns:
+        停止结果
+    """
+    result = service.stop_fetch()
+    return result

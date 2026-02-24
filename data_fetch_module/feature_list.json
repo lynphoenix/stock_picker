@@ -1,0 +1,333 @@
+[
+  {
+    "category": "functional",
+    "description": "should_fetch_today - 判断今日是否为交易日（周末返回False）",
+    "steps": [
+      "Step 1: 导入AutoDataFetcher",
+      "Step 2: 调用should_fetch_today()，传入周六日期",
+      "Step 3: 验证返回False"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "should_fetch_today - 判断今日是否为交易日（周日返回False）",
+    "steps": [
+      "Step 1: 调用should_fetch_today()，传入周日日期",
+      "Step 2: 验证返回False"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "should_fetch_today - 判断今日是否为交易日（工作日返回True）",
+    "steps": [
+      "Step 1: 调用should_fetch_today()，传入工作日日期",
+      "Step 2: 验证返回True"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "get_stock_list - 从stock_pools.json获取股票列表",
+    "steps": [
+      "Step 1: 创建stock_pools.json包含测试股票",
+      "Step 2: 调用get_stock_list()",
+      "Step 3: 验证返回非空列表",
+      "Step 4: 验证包含配置的股票代码"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "is_cache_valid - 缓存有效时返回True",
+    "steps": [
+      "Step 1: 预先写入缓存数据",
+      "Step 2: 调用is_cache_valid(symbol, start_date, end_date)",
+      "Step 3: 验证返回True"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "is_cache_valid - 缓存无效时返回False",
+    "steps": [
+      "Step 1: 不预先写入缓存",
+      "Step 2: 调用is_cache_valid(symbol, start_date, end_date)",
+      "Step 3: 验证返回False"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "fetch_daily_data - Baostock单股票采集返回数据",
+    "steps": [
+      "Step 1: 调用fetch_daily_data，股票'sh.600000'",
+      "Step 2: 验证返回DataFrame非空",
+      "Step 3: 验证包含必要字段: date,code,open,high,low,close,volume"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "fetch_daily_data - 失败重试机制",
+    "steps": [
+      "Step 1: 设置retry_times=3",
+      "Step 2: 模拟前2次失败，第3次成功",
+      "Step 3: 验证最终返回成功",
+      "Step 4: 验证重试日志正确记录"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "fetch_daily_data - 并发控制（10并发）",
+    "steps": [
+      "Step 1: 设置max_concurrent=10",
+      "Step 2: 传入20只股票",
+      "Step 3: 验证并发执行",
+      "Step 4: 验证总时间小于串行时间"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "DataSourceManager - 多源fallback（Baostock失败自动切换AKShare）",
+    "steps": [
+      "Step 1: 模拟Baostock查询失败",
+      "Step 2: 调用fetch_with_fallback()",
+      "Step 3: 验证自动切换到AKShare",
+      "Step 4: 验证最终返回数据"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "CircuitBreaker - 连续5次失败触发熔断",
+    "steps": [
+      "Step 1: 连续调用record_failure() 5次",
+      "Step 2: 调用is_open()",
+      "Step 3: 验证返回True（熔断中）"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "CircuitBreaker - 连续2次成功恢复",
+    "steps": [
+      "Step 1: 熔断状态下",
+      "Step 2: 连续调用record_success() 2次",
+      "Step 3: 验证状态恢复为CLOSED"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "SQLiteCache - 缓存写入和读取",
+    "steps": [
+      "Step 1: 写入测试数据到缓存",
+      "Step 2: 使用相同key读取",
+      "Step 3: 验证数据一致"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "SQLiteCache - 增量采集（已有缓存跳过）",
+    "steps": [
+      "Step 1: 预先写入部分日期的缓存",
+      "Step 2: 触发增量采集",
+      "Step 3: 验证只采集缺失日期",
+      "Step 4: 验证skipped计数正确"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "DataScheduler - 交易日自动跳过",
+    "steps": [
+      "Step 1: 设置定时任务",
+      "Step 2: 模拟非交易日执行",
+      "Step 3: 验证跳过采集",
+      "Step 4: 验证日志输出跳过信息"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "API - /api/data/fetch-now 手动触发采集",
+    "steps": [
+      "Step 1: POST /api/data/fetch-now",
+      "Step 2: 验证返回task_id",
+      "Step 3: 验证status为started"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "API - /api/data/fetch/status/{task_id} 获取采集进度",
+    "steps": [
+      "Step 1: 先触发采集获取task_id",
+      "Step 2: GET /api/data/fetch/status/{task_id}",
+      "Step 3: 验证返回进度信息包含total/success/failed"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "API - /api/data/fetch/stats 获取采集统计",
+    "steps": [
+      "Step 1: 执行采集后",
+      "Step 2: GET /api/data/fetch/stats",
+      "Step 3: 验证返回统计信息"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "API - /api/data/fetch/stop 停止采集",
+    "steps": [
+      "Step 1: 启动采集任务",
+      "Step 2: GET /api/data/fetch/stop",
+      "Step 3: 验证任务停止",
+      "Step 4: 验证状态变为stopped"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "前端 - FetchControlPanel 手动触发按钮",
+    "steps": [
+      "Step 1: 导航到数据采集页面",
+      "Step 2: 点击'立即采集'按钮",
+      "Step 3: 验证按钮变为禁用状态",
+      "Step 4: 验证采集任务启动"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "前端 - FetchControlPanel 股票池选择",
+    "steps": [
+      "Step 1: 进入采集控制面板",
+      "Step 2: 选择股票池'all'",
+      "Step 3: 验证选择生效",
+      "Step 4: 选择'AI软件'验证切换"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "前端 - FetchControlPanel 日期范围选择",
+    "steps": [
+      "Step 1: 选择开始日期",
+      "Step 2: 选择结束日期",
+      "Step 3: 验证日期范围正确",
+      "Step 4: 验证结束日期不能早于开始日期"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "前端 - FetchControlPanel 实时进度条",
+    "steps": [
+      "Step 1: 触发采集",
+      "Step 2: 观察进度条更新",
+      "Step 3: 验证百分比正确计算",
+      "Step 4: 验证完成后进度条显示100%"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "前端 - FetchControlPanel 统计卡片",
+    "steps": [
+      "Step 1: 采集完成后",
+      "Step 2: 查看统计卡片",
+      "Step 3: 验证显示Total/Success/Failed/Skipped",
+      "Step 4: 验证数值正确（success+failed+skipped=total）"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "前端 - FetchControlPanel 停止按钮",
+    "steps": [
+      "Step 1: 采集进行中",
+      "Step 2: 点击'停止'按钮",
+      "Step 3: 验证采集停止",
+      "Step 4: 验证状态显示stopped"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "前端 - FetchControlPanel 错误日志显示",
+    "steps": [
+      "Step 1: 模拟采集失败场景",
+      "Step 2: 查看错误日志区域",
+      "Step 3: 验证错误股票代码显示",
+      "Step 4: 验证错误原因显示"
+    ],
+    "passes": false
+  },
+  {
+    "category": "performance",
+    "description": "性能 - 单股票采集<3秒",
+    "steps": [
+      "Step 1: 计时单股票采集",
+      "Step 2: 验证耗时<3秒"
+    ],
+    "passes": false
+  },
+  {
+    "category": "performance",
+    "description": "性能 - 100股票并发采集<60秒",
+    "steps": [
+      "Step 1: 准备100只股票列表",
+      "Step 2: 10并发采集",
+      "Step 3: 验证总耗时<60秒"
+    ],
+    "passes": false
+  },
+  {
+    "category": "performance",
+    "description": "性能 - API响应<500ms",
+    "steps": [
+      "Step 1: 计时API调用",
+      "Step 2: 验证响应时间<500ms"
+    ],
+    "passes": false
+  },
+  {
+    "category": "stability",
+    "description": "稳定性 - 网络超时自动重试",
+    "steps": [
+      "Step 1: 模拟网络超时",
+      "Step 2: 验证自动重试3次",
+      "Step 3: 验证失败记录正确"
+    ],
+    "passes": false
+  },
+  {
+    "category": "stability",
+    "description": "稳定性 - 采集中断状态保存",
+    "steps": [
+      "Step 1: 开始采集",
+      "Step 2: 强制中断",
+      "Step 3: 重新启动",
+      "Step 4: 验证从中断处继续"
+    ],
+    "passes": false
+  },
+  {
+    "category": "stability",
+    "description": "稳定性 - 重复采集幂等处理",
+    "steps": [
+      "Step 1: 采集同一数据两次",
+      "Step 2: 验证第二次跳过",
+      "Step 3: 验证数据库无重复"
+    ],
+    "passes": false
+  }
+]

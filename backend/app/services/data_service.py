@@ -34,6 +34,20 @@ class DataService:
         self.tasks_dir = Path(root_dir) / "data" / "repair_tasks"
         self.tasks_dir.mkdir(parents=True, exist_ok=True)
         self.running_tasks = {}
+        # 采集任务相关
+        self.fetch_tasks = {}
+        self.current_fetch_task_id = None
+        self.fetch_stats = {
+            "total": 0,
+            "success": 0,
+            "failed": 0,
+            "skipped": 0,
+            "last_run": None,
+            "errors": []
+        }
+        # 导入AutoDataFetcher
+        from core.data.auto_fetcher import AutoDataFetcher
+        self.fetcher = AutoDataFetcher()
 
     # ============================================================
     # 1. 数据总览
@@ -228,13 +242,90 @@ class DataService:
     def create_fetch_task(self) -> str:
         """创建立即采集任务"""
         task_id = str(uuid.uuid4())
-        # TODO: 实现
+        self.current_fetch_task_id = task_id
+
+        self.fetch_tasks[task_id] = {
+            "status": "running",
+            "progress": 0,
+            "started_at": datetime.now().isoformat(),
+            "total": 0,
+            "success": 0,
+            "failed": 0,
+            "skipped": 0,
+            "errors": []
+        }
+
         return task_id
 
     async def run_fetch_task(self, task_id: str):
         """执行立即采集任务"""
-        # TODO: 实现
-        pass
+        try:
+            if task_id not in self.fetch_tasks:
+                return
+
+            # 更新状态
+            self.fetch_tasks[task_id]["status"] = "running"
+
+            # 执行采集（使用同步版本）
+            result = self.fetcher.fetch_daily_data_sync(
+                stock_pool="all",
+                max_concurrent=10,
+                retry_times=3
+            )
+
+            # 更新结果
+            self.fetch_tasks[task_id].update({
+                "status": result.get("status", "completed"),
+                "progress": 100,
+                "total": result.get("total", 0),
+                "success": result.get("success", 0),
+                "failed": result.get("failed", 0),
+                "skipped": result.get("skipped", 0),
+                "errors": result.get("errors", []),
+                "ended_at": datetime.now().isoformat()
+            })
+
+            # 更新全局统计
+            self.fetch_stats["total"] = result.get("total", 0)
+            self.fetch_stats["success"] = result.get("success", 0)
+            self.fetch_stats["failed"] = result.get("failed", 0)
+            self.fetch_stats["skipped"] = result.get("skipped", 0)
+            self.fetch_stats["last_run"] = datetime.now().isoformat()
+            self.fetch_stats["errors"] = result.get("errors", [])[-10:]
+
+        except Exception as e:
+            self.fetch_tasks[task_id].update({
+                "status": "failed",
+                "error": str(e),
+                "ended_at": datetime.now().isoformat()
+            })
+
+    def get_fetch_status(self, task_id: str) -> Optional[dict]:
+        """获取采集任务状态"""
+        if task_id in self.fetch_tasks:
+            return self.fetch_tasks[task_id]
+        return None
+
+    def get_fetch_stats(self) -> dict:
+        """获取采集统计"""
+        status = self.fetcher.get_status()
+        return {
+            "total": self.fetch_stats.get("total", 0),
+            "success": self.fetch_stats.get("success", 0),
+            "failed": self.fetch_stats.get("failed", 0),
+            "skipped": self.fetch_stats.get("skipped", 0),
+            "last_run": self.fetch_stats.get("last_run"),
+            "errors": self.fetch_stats.get("errors", []),
+            "current_status": status.get("status", "idle")
+        }
+
+    def stop_fetch(self) -> dict:
+        """停止采集"""
+        self.fetcher.stop()
+        if self.current_fetch_task_id and self.current_fetch_task_id in self.fetch_tasks:
+            self.fetch_tasks[self.current_fetch_task_id]["status"] = "stopped"
+            self.fetch_tasks[self.current_fetch_task_id]["ended_at"] = datetime.now().isoformat()
+        return {"status": "stopped", "message": "采集已停止"}
 
     def _load_fetch_config(self) -> Dict:
         """加载采集配置"""
