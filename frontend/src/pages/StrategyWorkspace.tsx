@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Card, Row, Col, Select, Button, InputNumber, message, Spin, Tag, Statistic, Progress, Space } from 'antd'
-import { RocketOutlined, ThunderboltOutlined, BarChartOutlined, TrophyOutlined, FallOutlined, RiseOutlined } from '@ant-design/icons'
-import { strategyAPI, backtestAPI, Strategy, BacktestResult } from '../services/api'
-import ReactECharts from 'echarts-for-react'
+import { Row, Col, Select, Button, InputNumber, message, Spin, Dropdown } from 'antd'
+import { BarChartOutlined, DownloadOutlined, FileExcelOutlined, FilePdfOutlined } from '@ant-design/icons'
+import { strategyAPI, backtestAPI, reportsAPI, Strategy, BacktestResult } from '../services/api'
 import './StrategyWorkspace.css'
 
 export default function StrategyWorkspace() {
@@ -58,7 +57,7 @@ export default function StrategyWorkspace() {
         setResult(response.data)
         message.success(`回测完成！测试了 ${response.data.stocks_tested} 只股票`)
       } else {
-        message.error(response.data.error || '回测失败')
+        message.error('回测失败')
       }
     } catch (error: any) {
       message.error(error.response?.data?.detail || '回测请求失败')
@@ -67,7 +66,51 @@ export default function StrategyWorkspace() {
     }
   }
 
-  const selectedStrategyData = strategies.find(s => s.id === selectedStrategy)
+  // Download handlers
+  const handleDownload = async (type: 'excel' | 'pdf') => {
+    if (!result?.task_id) {
+      message.warning('暂无回测任务ID，无法下载报表')
+      return
+    }
+
+    try {
+      const response = type === 'excel'
+        ? await reportsAPI.downloadExcel(result.task_id)
+        : await reportsAPI.downloadPdf(result.task_id)
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `backtest_report_${result.task_id}.${type === 'excel' ? 'xlsx' : 'pdf'}`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+
+      message.success(`${type === 'excel' ? 'Excel' : 'PDF'} 报表下载成功`)
+    } catch (error: any) {
+      console.error('Download error:', error)
+      message.error(error.response?.data?.detail || '下载失败，请确保后端服务正常运行')
+    }
+  }
+
+  const downloadMenuItems = {
+    items: [
+      {
+        key: 'excel',
+        label: '导出 Excel',
+        icon: <FileExcelOutlined />,
+        onClick: () => handleDownload('excel'),
+      },
+      {
+        key: 'pdf',
+        label: '导出 PDF',
+        icon: <FilePdfOutlined />,
+        onClick: () => handleDownload('pdf'),
+      },
+    ],
+  }
 
   return (
     <div className="strategy-workspace" style={{ padding: '40px 24px', maxWidth: 1400, margin: '0 auto' }}>
@@ -170,8 +213,15 @@ export default function StrategyWorkspace() {
         <Col xs={24} lg={15}>
           {result ? (
             <div style={{ background: 'rgba(18, 24, 32, 0.4)', borderRadius: 12, padding: 40, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-              <div style={{ marginBottom: 36 }}>
+              <div style={{ marginBottom: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2 style={{ fontSize: 18, fontWeight: 500, margin: 0, color: 'var(--text-primary)' }}>回测结果</h2>
+                {result.task_id && (
+                  <Dropdown menu={downloadMenuItems} placement="bottomRight">
+                    <Button icon={<DownloadOutlined />} type="text">
+                      导出报表
+                    </Button>
+                  </Dropdown>
+                )}
               </div>
 
               <Row gutter={[24, 32]}>

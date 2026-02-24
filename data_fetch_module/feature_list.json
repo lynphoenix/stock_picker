@@ -203,7 +203,7 @@
       "Step 3: 验证按钮变为禁用状态",
       "Step 4: 验证采集任务启动"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -214,7 +214,7 @@
       "Step 3: 验证选择生效",
       "Step 4: 选择'AI软件'验证切换"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -225,7 +225,7 @@
       "Step 3: 验证日期范围正确",
       "Step 4: 验证结束日期不能早于开始日期"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -236,7 +236,7 @@
       "Step 3: 验证百分比正确计算",
       "Step 4: 验证完成后进度条显示100%"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -247,7 +247,7 @@
       "Step 3: 验证显示Total/Success/Failed/Skipped",
       "Step 4: 验证数值正确（success+failed+skipped=total）"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -258,7 +258,7 @@
       "Step 3: 验证采集停止",
       "Step 4: 验证状态显示stopped"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -269,7 +269,7 @@
       "Step 3: 验证错误股票代码显示",
       "Step 4: 验证错误原因显示"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "performance",

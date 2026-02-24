@@ -2,8 +2,8 @@
 
 ## 当前状态
 - **测试总数**: 32
-- **通过**: 19
-- **失败**: 13
+- **通过**: 26
+- **失败**: 6
 
 ## 本次完成的工作
 
@@ -42,7 +42,17 @@
 - 实现了非交易日自动跳过
 - 修复了调度器状态获取
 
-## 通过的测试 (19)
+### 7. 前端 FetchControlPanel (frontend/src/pages/DataMonitoring.tsx)
+- 实现了手动触发按钮 (立即采集)
+- 实现了股票池选择器 (all/AI软件/半导体/机器人)
+- 实现了日期范围选择器
+- 实现了实时进度条显示
+- 实现了统计卡片 (Total/Success/Failed/Skipped)
+- 实现了停止按钮
+- 实现了错误日志显示区域
+- 添加了数据采集API到frontend/services/api.ts
+
+## 通过的测试 (26)
 1. should_fetch_today - 周末(周六)
 2. should_fetch_today - 周末(周日)
 3. should_fetch_today - 工作日
@@ -62,13 +72,18 @@
 17. API - fetch/status 获取进度
 18. API - fetch/stats 获取统计
 19. API - fetch/stop 停止采集
+20. 前端 - FetchControlPanel 手动触发按钮
+21. 前端 - FetchControlPanel 股票池选择
+22. 前端 - FetchControlPanel 日期范围选择
+23. 前端 - FetchControlPanel 实时进度条
+24. 前端 - FetchControlPanel 统计卡片
+25. 前端 - FetchControlPanel 停止按钮
+26. 前端 - FetchControlPanel 错误日志显示
 
-## 待完成 (13)
-- 前端 FetchControlPanel 组件 (7个测试)
+## 待完成 (6)
 - 性能测试 (3个测试)
 - 稳定性测试 (3个测试)
 
 ## 下一步工作
-1. 实现前端 FetchControlPanel React组件
-2. 完善性能测试
-3. 添加稳定性测试
+1. 完善性能测试
+2. 添加稳定性测试

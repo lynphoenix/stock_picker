@@ -104,6 +104,30 @@ export const dataAPI = {
   stocks: (params: { market?: string; page?: number; page_size?: number; sort_by?: string; only_missing?: boolean }) =>
     api.get<{ total: number; page: number; page_size: number; stocks: StockDataItem[] }>('/data/stocks', { params }),
   stockDetail: (code: string) => api.get(`/data/stocks/${code}`),
+
+  // Data fetch APIs
+  fetchNow: () => api.post<{ task_id: string; status: string; message: string }>('/data/fetch-now'),
+  fetchStatus: (taskId: string) => api.get<{
+    status: string;
+    progress: number;
+    total: number;
+    success: number;
+    failed: number;
+    skipped: number;
+    errors: Array<{ symbol: string; error: string }>;
+    started_at?: string;
+    ended_at?: string;
+  }>(`/data/fetch/status/${taskId}`),
+  fetchStats: () => api.get<{
+    total: number;
+    success: number;
+    failed: number;
+    skipped: number;
+    last_run: string | null;
+    errors: Array<{ symbol: string; error: string }>;
+    current_status: string;
+  }>('/data/fetch/stats'),
+  fetchStop: () => api.post<{ status: string; message: string }>('/data/fetch/stop'),
 }
 
 export const backtestAPI = {
@@ -111,6 +135,19 @@ export const backtestAPI = {
   fullBacktest: (config: BacktestConfig) => api.post<{ task_id: string }>('/backtest/full', config),
   getTaskStatus: (taskId: string) => api.get<BacktestResult>(`/backtest/tasks/${taskId}`),
   getTaskResult: (taskId: string) => api.get<BacktestResult>(`/backtest/tasks/${taskId}/result`),
+}
+
+export const reportsAPI = {
+  downloadExcel: (taskId: string) => {
+    return api.get(`/reports/${taskId}/excel`, {
+      responseType: 'blob',
+    })
+  },
+  downloadPdf: (taskId: string) => {
+    return api.get(`/reports/${taskId}/pdf`, {
+      responseType: 'blob',
+    })
+  },
 }
 
 export default api
