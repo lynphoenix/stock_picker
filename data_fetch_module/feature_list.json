@@ -278,7 +278,7 @@
       "Step 1: 计时单股票采集",
       "Step 2: 验证耗时<3秒"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "performance",
@@ -328,6 +328,6 @@
       "Step 2: 验证第二次跳过",
       "Step 3: 验证数据库无重复"
     ],
-    "passes": false
+    "passes": true
   }
 ]
