@@ -685,7 +685,14 @@ class AutoDataFetcher:
         end_date: str,
         retry_times: int
     ) -> Dict[str, Any]:
-        """带重试的采集"""
+        """带重试的采集 - 支持网络超时自动重试"""
+        # 导入超时异常类型
+        try:
+            from requests.exceptions import Timeout, ConnectionError as RequestsConnectionError
+        except ImportError:
+            Timeout = Exception
+            RequestsConnectionError = Exception
+
         for attempt in range(retry_times):
             try:
                 result = self.data_source_manager.fetch_with_fallback(
@@ -698,10 +705,31 @@ class AutoDataFetcher:
                 if result["success"]:
                     return result
 
-                if attempt < retry_times - 1:
-                    print(f"⚠️ {symbol} 第{attempt + 1}次失败，{result.get('error_message')}，重试中...")
-                    await asyncio.sleep(1)  # 重试前等待
+                # 检查是否为网络错误（超时、连接失败等）
+                error_msg = result.get("error_message", "").lower()
+                is_network_error = any(keyword in error_msg for keyword in
+                    ["timeout", "超时", "connection", "连接", "network", "网络", "refused", "拒绝"])
 
+                if is_network_error and attempt < retry_times - 1:
+                    wait_time = (attempt + 1) * 2  # 指数退避: 2, 4, 6秒
+                    print(f"⚠️ {symbol} 第{attempt + 1}次网络错误，{wait_time}秒后重试...")
+                    await asyncio.sleep(wait_time)
+                elif attempt < retry_times - 1:
+                    print(f"⚠️ {symbol} 第{attempt + 1}次失败，{result.get('error_message')}，1秒后重试...")
+                    await asyncio.sleep(1)
+
+            except Timeout as e:
+                # 超时异常 - 使用指数退避
+                wait_time = (attempt + 1) * 2
+                print(f"⏱️ {symbol} 第{attempt + 1}次超时，{wait_time}秒后重试...")
+                if attempt < retry_times - 1:
+                    await asyncio.sleep(wait_time)
+            except RequestsConnectionError as e:
+                # 连接错误 - 使用指数退避
+                wait_time = (attempt + 1) * 2
+                print(f"🔌 {symbol} 第{attempt + 1}次连接错误，{wait_time}秒后重试...")
+                if attempt < retry_times - 1:
+                    await asyncio.sleep(wait_time)
             except Exception as e:
                 print(f"❌ {symbol} 第{attempt + 1}次异常: {e}")
                 if attempt < retry_times - 1:
@@ -718,7 +746,63 @@ class AutoDataFetcher:
         """停止采集"""
         self._stop_requested = True
         self.status = FetchStatus.STOPPED
+        # 保存中断状态
+        self._save_interrupted_state()
         print("🛑 采集已停止")
+
+    def _save_interrupted_state(self):
+        """保存中断状态以便恢复"""
+        try:
+            state_file = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "data", "fetch_interrupted_state.json"
+            )
+            os.makedirs(os.path.dirname(state_file), exist_ok=True)
+
+            state = {
+                "status": self.status.value,
+                "stats": self.stats.to_dict(),
+                "timestamp": datetime.now().isoformat()
+            }
+
+            with open(state_file, 'w', encoding='utf-8') as f:
+                json.dump(state, f, ensure_ascii=False, indent=2)
+
+            print(f"💾 中断状态已保存: {state_file}")
+        except Exception as e:
+            print(f"⚠️ 保存中断状态失败: {e}")
+
+    def load_interrupted_state(self) -> Optional[Dict[str, Any]]:
+        """加载中断状态"""
+        try:
+            state_file = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "data", "fetch_interrupted_state.json"
+            )
+
+            if os.path.exists(state_file):
+                with open(state_file, 'r', encoding='utf-8') as f:
+                    state = json.load(f)
+                print(f"📂 已加载中断状态: {state.get('timestamp')}")
+                return state
+        except Exception as e:
+            print(f"⚠️ 加载中断状态失败: {e}")
+
+        return None
+
+    def clear_interrupted_state(self):
+        """清除中断状态"""
+        try:
+            state_file = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "data", "fetch_interrupted_state.json"
+            )
+
+            if os.path.exists(state_file):
+                os.remove(state_file)
+                print("🗑️ 中断状态已清除")
+        except Exception as e:
+            print(f"⚠️ 清除中断状态失败: {e}")
 
     def get_status(self) -> Dict[str, Any]:
         """获取当前采集状态"""

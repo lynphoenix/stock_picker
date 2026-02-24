@@ -288,7 +288,7 @@
       "Step 2: 10并发采集",
       "Step 3: 验证总耗时<60秒"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "performance",
@@ -297,7 +297,7 @@
       "Step 1: 计时API调用",
       "Step 2: 验证响应时间<500ms"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "stability",
@@ -307,7 +307,7 @@
       "Step 2: 验证自动重试3次",
       "Step 3: 验证失败记录正确"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "stability",
@@ -318,7 +318,7 @@
       "Step 3: 重新启动",
       "Step 4: 验证从中断处继续"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "stability",

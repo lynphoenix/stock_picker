@@ -292,6 +292,7 @@ class DataService:
             self.fetch_stats["skipped"] = result.get("skipped", 0)
             self.fetch_stats["last_run"] = datetime.now().isoformat()
             self.fetch_stats["errors"] = result.get("errors", [])[-10:]
+            self.fetch_stats["current_status"] = result.get("status", "completed")
 
         except Exception as e:
             self.fetch_tasks[task_id].update({
@@ -307,8 +308,8 @@ class DataService:
         return None
 
     def get_fetch_stats(self) -> dict:
-        """获取采集统计"""
-        status = self.fetcher.get_status()
+        """获取采集统计 - 优化：直接返回缓存的统计信息"""
+        # 直接返回缓存的统计信息，避免不必要的调用
         return {
             "total": self.fetch_stats.get("total", 0),
             "success": self.fetch_stats.get("success", 0),
@@ -316,7 +317,7 @@ class DataService:
             "skipped": self.fetch_stats.get("skipped", 0),
             "last_run": self.fetch_stats.get("last_run"),
             "errors": self.fetch_stats.get("errors", []),
-            "current_status": status.get("status", "idle")
+            "current_status": self.fetch_stats.get("current_status", "idle")
         }
 
     def stop_fetch(self) -> dict:
