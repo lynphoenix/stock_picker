@@ -8,7 +8,18 @@ from typing import List, Optional
 from datetime import datetime
 import uuid
 
+# Import agents
+import sys
+import os
+# Add the api directory to path
+api_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, api_dir)
+from agents.screener_agent import ScreenerAgent
+
 router = APIRouter()
+
+# Initialize agents
+screener_agent = ScreenerAgent()
 
 
 class ChatMessage(BaseModel):
@@ -58,7 +69,7 @@ async def chat(request: ChatRequest):
     chat_sessions[session_id].append(user_message)
 
     # Generate AI response (simplified - in production, use LLM)
-    ai_response = _generate_response(request.message, chat_sessions[session_id])
+    ai_response = await _generate_response(request.message, chat_sessions[session_id])
 
     # Add assistant message
     assistant_message = ChatMessage(
@@ -92,11 +103,19 @@ async def delete_chat_session(session_id: str):
     return {"status": "deleted", "session_id": session_id}
 
 
-def _generate_response(user_message: str, history: List[ChatMessage]) -> dict:
+async def _generate_response(user_message: str, history: List[ChatMessage]) -> dict:
     """
     Generate AI response (simplified version)
     In production, this would call LLM API
     """
+    # Check if this is a screening query
+    if screener_agent.can_handle(user_message):
+        result = await screener_agent.execute(user_message)
+        return {
+            "content": result["formatted_results"],
+            "suggestions": result.get("suggestions", [])
+        }
+
     message_lower = user_message.lower()
 
     # Greeting
