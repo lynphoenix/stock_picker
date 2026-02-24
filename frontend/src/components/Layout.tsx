@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { Layout as AntLayout, Menu } from 'antd'
-import { RocketOutlined, DatabaseOutlined, ApiOutlined } from '@ant-design/icons'
+import { RocketOutlined, DatabaseOutlined, ApiOutlined, MessageOutlined } from '@ant-design/icons'
 import './Layout.css'
 
 const { Header, Content } = AntLayout
@@ -25,6 +25,11 @@ export default function Layout() {
             selectedKeys={[location.pathname]}
             className="main-menu"
             items={[
+              {
+                key: '/chat',
+                icon: <MessageOutlined />,
+                label: <Link to="/chat">AI聊天</Link>,
+              },
               {
                 key: '/strategy',
                 icon: <RocketOutlined />,

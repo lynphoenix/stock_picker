@@ -12,7 +12,7 @@ from pathlib import Path
 root_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root_dir))
 
-from backend.app.api import strategies, backtest, data, reports, monitoring
+from backend.app.api import strategies, backtest, data, reports, monitoring, chat
 from backend.scheduler import DataScheduler
 
 # 全局调度器实例
@@ -61,6 +61,7 @@ app.include_router(backtest.router, prefix="/api/backtest", tags=["回测"])
 app.include_router(data.router, prefix="/api/data", tags=["数据管理"])
 app.include_router(reports.router, prefix="/api/reports", tags=["报表"])
 app.include_router(monitoring.router, prefix="/api", tags=["监控系统"])  # Phase 3监控
+app.include_router(chat.router, prefix="/api/chat", tags=["AI聊天"])
 
 
 @app.get("/")

@@ -9,7 +9,7 @@
       "Step 4: Verify system responds with greeting message",
       "Step 5: Verify message appears in chat history"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
