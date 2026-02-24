@@ -61,8 +61,8 @@ class SignalAgent:
         known_names = list(self.STOCK_INFO.values())
         has_known_name = any(info["name"] in query for info in known_names)
 
-        # 检查6位股票代码
-        has_stock_code = bool(re.search(r'\b\d{6}\b', query))
+        # 检查6位股票代码 (for Chinese text)
+        has_stock_code = bool(re.search(r'\d{6}', query))
 
         return has_signal_keyword or (has_known_name and ("?" in query or "吗" in query))
 
@@ -70,8 +70,8 @@ class SignalAgent:
         """
         从查询中提取股票代码
         """
-        # 匹配6位数字代码
-        code_matches = re.findall(r'\b(\d{6})\b', query)
+        # 匹配6位数字代码 (不要求word boundary for Chinese text)
+        code_matches = re.findall(r'(\d{6})', query)
         if code_matches:
             return code_matches[0]
 

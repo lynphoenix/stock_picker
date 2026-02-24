@@ -112,6 +112,89 @@ async def _generate_response(user_message: str, history: List[ChatMessage]) -> d
     Generate AI response (simplified version)
     In production, this would call LLM API
     """
+    message_lower = user_message.lower()
+
+    # Check for multi-agent collaboration: "找...并分析..." or "筛选...分析..."
+    needs_screening_and_analysis = (
+        ("找" in message_lower or "筛选" in message_lower) and
+        ("股票" in message_lower or "股" in message_lower) and
+        ("分析" in message_lower)
+    )
+
+    needs_screening_and_signal = (
+        ("找" in message_lower or "筛选" in message_lower) and
+        ("股票" in message_lower or "股" in message_lower) and
+        ("买" in message_lower or "卖" in message_lower or "信号" in message_lower or "可以" in message_lower)
+    )
+
+    # Multi-agent: screening + analysis
+    if needs_screening_and_analysis:
+        # First, run ScreenerAgent to find stocks
+        screener_result = await screener_agent.execute(user_message)
+
+        if screener_result.get("stocks"):
+            # Get top 3 stocks to analyze
+            top_stocks = screener_result["stocks"][:3]
+
+            # Build analysis query for top 3
+            stock_names = [s["name"] for s in top_stocks]
+            stock_codes = [s["symbol"] for s in top_stocks]
+
+            # Now run AnalyzerAgent on top stocks
+            analysis_query = "分析" + " ".join([f"{name}{code}" for name, code in zip(stock_names, stock_codes)])
+            analyzer_result = await analyzer_agent.execute(analysis_query)
+
+            # Combine results
+            combined_result = screener_result["formatted_results"] + "\n\n" + "=" * 40 + "\n\n"
+            if analyzer_result.get("success"):
+                combined_result += analyzer_result["formatted_results"]
+            else:
+                combined_result += f"分析完成，但遇到一些问题: {analyzer_result.get('error', '未知错误')}"
+
+            return {
+                "content": combined_result,
+                "suggestions": analyzer_result.get("suggestions", [])
+            }
+        else:
+            return {
+                "content": screener_result["formatted_results"],
+                "suggestions": screener_result.get("suggestions", [])
+            }
+
+    # Multi-agent: screening + signal
+    if needs_screening_and_signal:
+        # First, run ScreenerAgent to find stocks
+        screener_result = await screener_agent.execute(user_message)
+
+        if screener_result.get("stocks"):
+            # Get top stocks to generate signals
+            top_stocks = screener_result["stocks"][:3]
+
+            # Build signal query for top stocks
+            signals_content = ""
+
+            for stock in top_stocks:
+                signal_query = f"{stock['name']}{stock['symbol']}可以买吗"
+                signal_result = await signal_agent.execute(signal_query)
+
+                if signal_result.get("success"):
+                    signals_content += f"\n{'=' * 40}\n\n"
+                    signals_content += signal_result["formatted_results"]
+
+            # Combine results
+            combined_result = screener_result["formatted_results"] + "\n\n" + "=" * 40 + "\n\n"
+            combined_result += signals_content if signals_content else "未能生成交易信号"
+
+            return {
+                "content": combined_result,
+                "suggestions": ["帮我找其他股票"]
+            }
+        else:
+            return {
+                "content": screener_result["formatted_results"],
+                "suggestions": screener_result.get("suggestions", [])
+            }
+
     # Check if this is a screening query
     if screener_agent.can_handle(user_message):
         result = await screener_agent.execute(user_message)
@@ -147,8 +230,6 @@ async def _generate_response(user_message: str, history: List[ChatMessage]) -> d
                 "content": result.get("error", "生成信号失败"),
                 "suggestions": result.get("suggestions", [])
             }
-
-    message_lower = user_message.lower()
 
     # Greeting
     if "你好" in message_lower or "hello" in message_lower or "hi" in message_lower:
