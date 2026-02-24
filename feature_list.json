@@ -38,7 +38,7 @@
       "Step 7: Verify analysis includes overall score",
       "Step 8: Verify results shown in analysis card"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -54,7 +54,7 @@
       "Step 8: Verify signal includes position size suggestion",
       "Step 9: Verify signal includes reasoning"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

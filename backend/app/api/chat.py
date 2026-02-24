@@ -15,11 +15,15 @@ import os
 api_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, api_dir)
 from agents.screener_agent import ScreenerAgent
+from agents.analyzer_agent import AnalyzerAgent
+from agents.signal_agent import SignalAgent
 
 router = APIRouter()
 
 # Initialize agents
 screener_agent = ScreenerAgent()
+analyzer_agent = AnalyzerAgent()
+signal_agent = SignalAgent()
 
 
 class ChatMessage(BaseModel):
@@ -115,6 +119,34 @@ async def _generate_response(user_message: str, history: List[ChatMessage]) -> d
             "content": result["formatted_results"],
             "suggestions": result.get("suggestions", [])
         }
+
+    # Check if this is an analysis query
+    if analyzer_agent.can_handle(user_message):
+        result = await analyzer_agent.execute(user_message)
+        if result.get("success"):
+            return {
+                "content": result["formatted_results"],
+                "suggestions": result.get("suggestions", [])
+            }
+        else:
+            return {
+                "content": result.get("error", "分析失败"),
+                "suggestions": result.get("suggestions", [])
+            }
+
+    # Check if this is a trading signal query
+    if signal_agent.can_handle(user_message):
+        result = await signal_agent.execute(user_message)
+        if result.get("success"):
+            return {
+                "content": result["formatted_results"],
+                "suggestions": result.get("suggestions", [])
+            }
+        else:
+            return {
+                "content": result.get("error", "生成信号失败"),
+                "suggestions": result.get("suggestions", [])
+            }
 
     message_lower = user_message.lower()
 
