@@ -2,6 +2,7 @@
 """
 数据服务层
 """
+import asyncio
 import uuid
 import json
 from datetime import datetime
@@ -32,6 +33,10 @@ class DataService:
         self.monitor = DataMonitor()
         self.config_file = Path(root_dir) / "data" / "fetch_schedule.json"
         self.tasks_dir = Path(root_dir) / "data" / "repair_tasks"
+        # 股票列表缓存
+        self._stocks_cache = None
+        self._stocks_cache_time = None
+        self._stocks_cache_ttl = 60  # 缓存60秒
         self.tasks_dir.mkdir(parents=True, exist_ok=True)
         self.running_tasks = {}
         # 采集任务相关
@@ -66,6 +71,7 @@ class DataService:
         self,
         market: str = "all",
         sort_by: str = "completeness",
+        search: str = "",
         only_missing: bool = False,
         page: int = 1,
         page_size: int = 50
@@ -74,6 +80,7 @@ class DataService:
         data = self.monitor.get_stocks_list(
             market=market,
             sort_by=sort_by,
+            search=search,
             only_missing=only_missing,
             page=page,
             page_size=page_size
@@ -239,11 +246,12 @@ class DataService:
         self._save_fetch_config(config.dict())
         return config
 
-    def create_fetch_task(self) -> str:
+    def create_fetch_task(self, start_date: str = None, end_date: str = None) -> str:
         """创建立即采集任务"""
         task_id = str(uuid.uuid4())
         self.current_fetch_task_id = task_id
-
+        
+        # 存储日期范围
         self.fetch_tasks[task_id] = {
             "status": "running",
             "progress": 0,
@@ -252,22 +260,39 @@ class DataService:
             "success": 0,
             "failed": 0,
             "skipped": 0,
-            "errors": []
+            "errors": [],
+            "start_date": start_date,
+            "end_date": end_date
         }
 
         return task_id
 
     async def run_fetch_task(self, task_id: str):
-        """执行立即采集任务"""
+        """执行立即采集任务（async包装器）"""
+        # 在线程池中运行同步任务
+        import concurrent.futures
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(executor, lambda: self.run_fetch_task_sync(task_id))
+
+    def run_fetch_task_sync(self, task_id: str):
+        """执行立即采集任务（同步版本）"""
         try:
             if task_id not in self.fetch_tasks:
                 return
+
+            # 获取日期范围
+            task_info = self.fetch_tasks[task_id]
+            start_date = task_info.get("start_date")
+            end_date = task_info.get("end_date")
 
             # 更新状态
             self.fetch_tasks[task_id]["status"] = "running"
 
             # 执行采集（使用同步版本）
             result = self.fetcher.fetch_daily_data_sync(
+                start_date=start_date,
+                end_date=end_date,
                 stock_pool="all",
                 max_concurrent=10,
                 retry_times=3

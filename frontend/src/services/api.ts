@@ -101,9 +101,10 @@ export const strategyAPI = {
 
 export const dataAPI = {
   overview: () => api.get<DataOverview>('/data/overview'),
-  stocks: (params: { market?: string; page?: number; page_size?: number; sort_by?: string; only_missing?: boolean }) =>
+  stocks: (params: { market?: string; page?: number; page_size?: number; sort_by?: string; search?: string; only_missing?: boolean }) =>
     api.get<{ total: number; page: number; page_size: number; stocks: StockDataItem[] }>('/data/stocks', { params }),
   stockDetail: (code: string) => api.get(`/data/stocks/${code}`),
+  stockMinute: (code: string, date?: string) => api.get(`/data/stock/${code}/minute`, { params: { date } }),
 
   // Data fetch APIs
   fetchNow: () => api.post<{ task_id: string; status: string; message: string }>('/data/fetch-now'),
