@@ -261,8 +261,12 @@ class StrategyService:
 import os
 import re
 import ast
+import hashlib
+import logging
 import anthropic
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # 获取prompt模板
 PROMPT_TEMPLATE_PATH = root_dir / "prompts" / "strategy_generation_prompt.md"
@@ -271,10 +275,37 @@ STRATEGIES_DIR = root_dir / "strategies"
 
 def get_prompt_template() -> str:
     """读取prompt模板"""
-    if PROMPT_TEMPLATE_PATH.exists():
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
         with open(PROMPT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
             return f.read()
-    return ""
+    except FileNotFoundError:
+        logger.error(f"Prompt template not found: {PROMPT_TEMPLATE_PATH}")
+        raise RuntimeError(
+            f"Prompt template file is missing at {PROMPT_TEMPLATE_PATH}. "
+            "This indicates a deployment issue. Please ensure the prompts/ directory "
+            "is included in the deployment."
+        )
+    except PermissionError:
+        logger.error(f"Permission denied reading prompt template: {PROMPT_TEMPLATE_PATH}")
+        raise RuntimeError(
+            f"Cannot read prompt template at {PROMPT_TEMPLATE_PATH} due to permission error. "
+            "Please check file permissions."
+        )
+    except UnicodeDecodeError as e:
+        logger.error(f"Prompt template has invalid encoding: {e}")
+        raise RuntimeError(
+            f"Prompt template at {PROMPT_TEMPLATE_PATH} contains invalid UTF-8 encoding. "
+            "Please verify the file is saved with UTF-8 encoding."
+        )
+    except OSError as e:
+        logger.error(f"OS error reading prompt template: {e}")
+        raise RuntimeError(
+            f"Failed to read prompt template at {PROMPT_TEMPLATE_PATH}: {e}. "
+            "This may indicate a disk or filesystem issue."
+        )
 
 
 def validate_python_syntax(code: str) -> tuple[bool, Optional[str]]:
@@ -394,14 +425,81 @@ async def generate_strategy(request):
         
         # 保存策略到文件
         STRATEGIES_DIR.mkdir(parents=True, exist_ok=True)
+
+        # 清理文件名，防止路径遍历攻击
         strategy_filename = re.sub(r'[^a-zA-Z0-9_\u4e00-\u9fff]', "_", request.name)
-        if not strategy_filename.strip("_"):
-            import hashlib
-            strategy_filename = "strategy_" + hashlib.md5(request.name.encode()).hexdigest()[:8]
-        
+        # 移除路径组件，只保留文件名部分
+        strategy_filename = Path(strategy_filename).name
+
+        # 如果清理后文件名为空或只有下划线/点号，使用哈希值
+        if not strategy_filename.strip("_.") or strategy_filename.startswith('.'):
+            strategy_filename = "strategy_" + hashlib.sha256(request.name.encode()).hexdigest()[:16]
+
         strategy_path = STRATEGIES_DIR / f"{strategy_filename}.py"
-        with open(strategy_path, 'w', encoding='utf-8') as f:
-            f.write(strategy_code)
+
+        # 安全检查：确保最终路径在STRATEGIES_DIR内
+        try:
+            strategy_path_resolved = strategy_path.resolve()
+            strategies_dir_resolved = STRATEGIES_DIR.resolve()
+            if not strategy_path_resolved.is_relative_to(strategies_dir_resolved):
+                logger.error(f"Path traversal attempt detected: {request.name} -> {strategy_path}")
+                return GenerateStrategyResponse(
+                    success=False,
+                    errors=["Invalid strategy name"],
+                    message="Strategy name contains invalid characters"
+                )
+        except (ValueError, OSError) as e:
+            logger.error(f"Path validation failed: {e}")
+            return GenerateStrategyResponse(
+                success=False,
+                errors=["Invalid path"],
+                message="Failed to validate strategy path"
+            )
+
+        # 写入文件，带完整错误处理
+        try:
+            with open(strategy_path, 'w', encoding='utf-8') as f:
+                f.write(strategy_code)
+
+            # 验证文件确实写入成功
+            if not strategy_path.exists():
+                raise OSError(f"File was not created: {strategy_path}")
+
+            file_size = strategy_path.stat().st_size
+            if file_size == 0:
+                raise OSError(f"File created but is empty: {strategy_path}")
+
+            logger.info(f"Strategy saved successfully: {strategy_path} ({file_size} bytes)")
+
+        except PermissionError as e:
+            logger.error(f"Permission denied writing strategy: {e}")
+            return GenerateStrategyResponse(
+                success=False,
+                errors=[f"Permission denied writing to {strategy_path}"],
+                message="Cannot save strategy file due to permission error. Please contact administrator."
+            )
+        except OSError as e:
+            if "No space left on device" in str(e) or "Disk quota exceeded" in str(e):
+                logger.error(f"Disk full when writing strategy: {e}")
+                return GenerateStrategyResponse(
+                    success=False,
+                    errors=["Disk full"],
+                    message="Cannot save strategy - server disk is full. Please contact administrator."
+                )
+            else:
+                logger.error(f"OS error writing strategy: {e}")
+                return GenerateStrategyResponse(
+                    success=False,
+                    errors=[f"Filesystem error: {str(e)}"],
+                    message="Failed to save strategy due to filesystem error. Please try again."
+                )
+        except Exception as e:
+            logger.error(f"Unexpected error writing strategy: {e}", exc_info=True)
+            return GenerateStrategyResponse(
+                success=False,
+                errors=[f"Unexpected error: {str(e)}"],
+                message="Failed to save strategy. Please try again."
+            )
         
         # 运行真实回测
         backtest_data = await run_real_backtest(strategy_code, request.stock_pool, request.start_date, request.end_date, request.initial_capital)
@@ -413,12 +511,46 @@ async def generate_strategy(request):
             backtest_result=backtest_result,
             message=f"策略已保存到 {strategy_path}"
         )
-        
-    except Exception as e:
+
+    except RuntimeError as e:
+        # 捕获 get_prompt_template() 抛出的错误
+        logger.error(f"Runtime error in strategy generation: {e}")
         return GenerateStrategyResponse(
             success=False,
             errors=[str(e)],
-            message="策略生成过程中发生错误"
+            message="配置错误，请联系管理员"
+        )
+
+    except anthropic.APIConnectionError as e:
+        logger.error(f"Anthropic API connection failed: {e}")
+        return GenerateStrategyResponse(
+            success=False,
+            errors=["Failed to connect to AI service"],
+            message="无法连接到AI服务，请检查网络连接或稍后重试"
+        )
+
+    except anthropic.RateLimitError as e:
+        logger.warning(f"Anthropic API rate limit exceeded: {e}")
+        return GenerateStrategyResponse(
+            success=False,
+            errors=["Rate limit exceeded"],
+            message="AI服务请求过多，请稍后重试"
+        )
+
+    except anthropic.AuthenticationError as e:
+        logger.error(f"Anthropic API authentication failed: {e}")
+        return GenerateStrategyResponse(
+            success=False,
+            errors=["API authentication failed"],
+            message="AI服务认证失败，请联系管理员"
+        )
+
+    except anthropic.APIError as e:
+        logger.error(f"Anthropic API error: {e}")
+        return GenerateStrategyResponse(
+            success=False,
+            errors=[f"AI service error: {str(e)}"],
+            message="AI服务出错，请稍后重试"
         )
 
 
