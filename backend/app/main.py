@@ -2,11 +2,20 @@
 """
 FastAPI 主应用
 """
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# 加载 .env 环境变量
+env_path = Path(__file__).parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+    print("✓ Loaded .env configuration")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import sys
-from pathlib import Path
 
 # 添加项目根目录到路径
 root_dir = Path(__file__).parent.parent.parent
@@ -50,7 +59,7 @@ app = FastAPI(
 # 配置CORS（允许前端访问）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # React开发服务器
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,14 +70,13 @@ app.include_router(strategies.router, prefix="/api/strategies", tags=["策略管
 app.include_router(backtest.router, prefix="/api/backtest", tags=["回测"])
 app.include_router(data.router, prefix="/api/data", tags=["数据管理"])
 app.include_router(reports.router, prefix="/api/reports", tags=["报表"])
-app.include_router(monitoring.router, prefix="/api", tags=["监控系统"])  # Phase 3监控
+app.include_router(monitoring.router, prefix="/api", tags=["监控系统"])
 app.include_router(chat.router, prefix="/api/chat", tags=["AI聊天"])
 app.include_router(agents_router, prefix="/api/agents", tags=["AI Agents"])
 
 
 @app.get("/")
 async def root():
-    """根路径"""
     return {
         "message": "股票回测系统 API",
         "version": "1.0.0",
@@ -78,13 +86,11 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """健康检查"""
     return {"status": "ok"}
 
 
 @app.get("/scheduler/status")
 async def get_scheduler_status():
-    """获取调度器状态"""
     if scheduler:
         return scheduler.get_status()
     return {"error": "调度器未启动"}
@@ -92,7 +98,6 @@ async def get_scheduler_status():
 
 @app.post("/scheduler/trigger")
 async def trigger_scheduler():
-    """手动触发一次数据采集"""
     if scheduler:
         import threading
         thread = threading.Thread(target=scheduler.trigger_now)

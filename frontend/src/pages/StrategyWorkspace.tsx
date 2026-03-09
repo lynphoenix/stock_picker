@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Row, Col, Select, Button, InputNumber, message, Spin, Dropdown } from 'antd'
+import { Row, Col, Select, Button, InputNumber, message, Spin, Dropdown, Table, Tag } from 'antd'
 import { BarChartOutlined, DownloadOutlined, FileExcelOutlined, FilePdfOutlined } from '@ant-design/icons'
 import { strategyAPI, backtestAPI, reportsAPI, Strategy, BacktestResult } from '../services/api'
 import './StrategyWorkspace.css'
@@ -143,10 +143,11 @@ export default function StrategyWorkspace() {
                     style={{ width: '100%' }}
                     size="large"
                     options={[
-                      { label: '科创板', value: 'sh_star' },
-                      { label: '全部', value: 'all' },
-                      { label: '沪市', value: 'sh_main' },
-                      { label: '创业板', value: 'sz_gem' },
+                      { label: '沪深核心', value: 'sh_star' },
+                      { label: '沪市全部', value: '沪市' },
+                      { label: '深市全部', value: '深市' },
+                      { label: '科创板', value: '科创板' },
+                      { label: '创业板', value: '创业板' },
                     ]}
                   />
                 </div>
@@ -267,6 +268,7 @@ export default function StrategyWorkspace() {
               <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                   测试 {result.stocks_tested} 只股票 · 最终资金 ¥{result.result?.final_capital.toLocaleString()} · 耗时 {result.duration}s
+{/* 交易记录表格 */}              {result && result.trades && result.trades.length > 0 && (                <div style={{ marginTop: 24 }}>                  <h3 style={{ fontSize: 16, marginBottom: 16, color: "var(--text-primary)" }}>交易记录</h3>                  <Table                    dataSource={result.trades}                    pagination={{ pageSize: 10 }}                    size="small"                    rowKey={(record, index) => String(index)}                    columns={[                      { title: "日期", dataIndex: "date", key: "date", width: 100 },                      { title: "股票", dataIndex: "code", key: "code", width: 80 },                      { title: "操作", dataIndex: "action", key: "action", width: 60,                        render: (val) => (                          <Tag color={val === "buy" ? "green" : "red"}>                            {val === "buy" ? "买入" : "卖出"}                          </Tag>                        )                      },                      { title: "价格", dataIndex: "price", key: "price", width: 80,                        render: (val) => val?.toFixed(2)                      },                      { title: "数量", dataIndex: "shares", key: "shares", width: 80 },                      { title: "金额", dataIndex: "amount", key: "amount", width: 100,                        render: (val) => val?.toLocaleString()                      },                      { title: "收益率", dataIndex: "profit_pct", key: "profit_pct", width: 80,                        render: (val) => val ? (                          <span style={{ color: val > 0 ? "var(--success)" : "var(--danger)" }}>                            {val > 0 ? "+" : ""}{val.toFixed(2)}%                          </span>                        ) : "-"                      },                      { title: "持仓天数", dataIndex: "holding_days", key: "holding_days", width: 80 },                      { title: "原因", dataIndex: "reason", key: "reason", ellipsis: true },                    ]}                  />                </div>              )}
                 </div>
               </div>
             </div>

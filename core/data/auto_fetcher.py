@@ -138,6 +138,43 @@ class DataSourceManager:
         self.baostock_breaker = CircuitBreaker("baostock")
         self.akshare_breaker = CircuitBreaker("akshare")
         self._bs_logged_in = False
+        self._all_stocks_cache = None
+        self._cache_time = None
+
+    def get_all_stocks(self, force_refresh: bool = False) -> list:
+        """获取全部A股股票列表"""
+        from datetime import datetime
+        if not force_refresh and self._all_stocks_cache and self._cache_time:
+            if (datetime.now() - self._cache_time).total_seconds() < 3600:
+                return self._all_stocks_cache
+        
+        self._login_baostock()
+        try:
+            rs = bs.query_stock_basic()
+            stocks = []
+            while rs.next():
+                row = rs.get_row_data()
+                code = row[0]
+                if code.startswith(('sh.6', 'sh.68', 'sz.0', 'sz.3')):
+                    pure_code = code.split('.')[1]
+                    try:
+                        code_num = int(pure_code)
+                        if (
+                            (code.startswith('sh.6') and 600000 <= code_num <= 603999) or
+                            (code.startswith('sh.68') and 688000 <= code_num <= 688999) or
+                            (code.startswith('sz.0') and 1 <= code_num <= 3999) or
+                            (code.startswith('sz.3') and 300000 <= code_num <= 303999)
+                        ):
+                            stocks.append(pure_code)
+                    except Exception as e: print(f"Error: {e}"); pass
+            stocks = sorted(list(set(stocks)))
+            self._all_stocks_cache = stocks
+            self._cache_time = datetime.now()
+            print(f"✅ 获取到 {len(stocks)} 只A股")
+            return stocks
+        except Exception as e:
+            print(f"获取股票列表失败: {e}")
+            return []
 
     def _login_baostock(self):
         """登录Baostock（线程安全）"""
@@ -170,7 +207,7 @@ class DataSourceManager:
         symbol: str,
         start_date: str,
         end_date: str,
-        adjust: str = "qfq"
+        adjust: str = ""
     ) -> pd.DataFrame:
         """从Baostock获取数据"""
         if not bs:
@@ -212,7 +249,8 @@ class DataSourceManager:
                 self.baostock_breaker.record_success()
                 return df
             else:
-                self.baostock_breaker.record_failure()
+                # 空数据不记录失败，避免误触熔断器
+                # self.baostock_breaker.record_failure()
                 return pd.DataFrame()
 
         except Exception as e:
@@ -225,7 +263,7 @@ class DataSourceManager:
         symbol: str,
         start_date: str,
         end_date: str,
-        adjust: str = "qfq"
+        adjust: str = ""
     ) -> pd.DataFrame:
         """从AKShare获取数据"""
         if not ak:
@@ -273,7 +311,7 @@ class DataSourceManager:
         symbol: str,
         start_date: str,
         end_date: str,
-        adjust: str = "qfq"
+        adjust: str = ""
     ) -> Dict[str, Any]:
         """
         故障转移采集 - 依次尝试各个数据源
@@ -296,6 +334,13 @@ class DataSourceManager:
                     "error_message": "",
                     "source": "baostock"
                 }
+            # Baostock 返回空数据（可能是停牌或非交易日），不尝试备用源
+            return {
+                "success": False,
+                "data": pd.DataFrame(),
+                "error_message": "Baostock 返回空数据（可能停牌）",
+                "source": None
+            }
 
         # 2. 尝试 AKShare (备用数据源)
         if not self.akshare_breaker.is_open():
@@ -357,10 +402,25 @@ class SQLiteCacheManager:
         conn.commit()
         conn.close()
 
+    def _normalize_date(self, date_str: str) -> str:
+        """标准化日期格式为 YYYY-MM-DD"""
+        if not date_str:
+            return date_str
+        # 移���所有分隔符
+        cleaned = date_str.replace('-', '').replace('/', '').replace('.', '')
+        # 如果是8位数字，转换为 YYYY-MM-DD
+        if len(cleaned) == 8 and cleaned.isdigit():
+            return f"{cleaned[:4]}-{cleaned[4:6]}-{cleaned[6:8]}"
+        return date_str
+
     def get(self, symbol: str, data_type: str, start_date: str, end_date: str) -> Optional[pd.DataFrame]:
         """读取缓存"""
         import sqlite3
         import zlib
+
+        # 标准化日期格式
+        start_date = self._normalize_date(start_date)
+        end_date = self._normalize_date(end_date)
 
         try:
             conn = sqlite3.connect(self.db_path)
@@ -395,20 +455,86 @@ class SQLiteCacheManager:
         data: pd.DataFrame,
         source: str = None
     ):
-        """写入缓存"""
+        """写入缓存（自动合并历史数据）"""
         import sqlite3
         import zlib
+        import json
 
         try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            # 查询该股票已有的所有记录
+            cursor.execute("""
+                SELECT id, start_date, end_date, data 
+                FROM stock_cache 
+                WHERE symbol = ? AND data_type = ?
+            """, (symbol, data_type))
+            
+            existing_records = cursor.fetchall()
+            
+            if existing_records:
+                # 合并所有日期和数据
+                all_dates = set()
+                
+                # 添加新数据的日期
+                if 'date' in data.columns:
+                    new_dates = set(data['date'].astype(str).tolist())
+                    all_dates.update(new_dates)
+                
+                # 合并历史数据
+                for record_id, old_start, old_end, old_data in existing_records:
+                    if old_data:
+                        try:
+                            decompressed = zlib.decompress(old_data).decode('utf-8')
+                            old_df = json.loads(decompressed)
+                            if old_df and isinstance(old_df, list):
+                                for d in old_df:
+                                    if isinstance(d, dict) and 'date' in d:
+                                        all_dates.add(self._normalize_date(str(d['date'])))
+                        except Exception as e: print(f"Error: {e}"); pass
+                # 合并数据
+                if all_dates:
+                    merged_data = data.copy()
+                    for record_id, old_start, old_end, old_data in existing_records:
+                        if old_data:
+                            try:
+                                decompressed = zlib.decompress(old_data).decode('utf-8')
+                                old_df = json.loads(decompressed)
+                                if old_df and isinstance(old_df, list):
+                                    old_df_df = pd.DataFrame(old_df)
+                                    if 'date' in old_df_df.columns:
+                                        # 标准化日期列
+                                        old_df_df['date'] = old_df_df['date'].apply(lambda x: self._normalize_date(str(x)))
+                                        merged_data = pd.concat([merged_data, old_df_df]).drop_duplicates(subset=['date'], keep='last')
+                            except Exception as e: print(f"Error: {e}"); pass
+                    
+                    # 排序
+                    if 'date' in merged_data.columns:
+                        merged_data = merged_data.sort_values('date').reset_index(drop=True)
+                    
+                    # 新的日期范围
+                    sorted_dates = sorted(all_dates)
+                    start_date = sorted_dates[0]
+                    end_date = sorted_dates[-1]
+                    data = merged_data
+
+            # 确保日期格式为 YYYY-MM-DD
+            start_date = self._normalize_date(start_date) if start_date else start_date
+            end_date = self._normalize_date(end_date) if end_date else end_date
             # 压缩数据
             json_str = data.to_json(orient='records', force_ascii=False)
             compressed_data = zlib.compress(json_str.encode('utf-8'))
 
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-
+            # 删除旧记录
             cursor.execute("""
-                INSERT OR REPLACE INTO stock_cache
+                DELETE FROM stock_cache 
+                WHERE symbol = ? AND data_type = ?
+            """, (symbol, data_type))
+            
+            # 插入合并后的记录
+            cursor.execute("""
+                INSERT INTO stock_cache
                 (symbol, data_type, start_date, end_date, data, source, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """, (symbol, data_type, start_date, end_date, compressed_data, source))
@@ -487,13 +613,8 @@ class AutoDataFetcher:
         if stock_pool != "all" and stock_pool in config.CURATED_STOCK_POOLS:
             return config.CURATED_STOCK_POOLS[stock_pool]
 
-        # 2. 合并所有配置的股票池
-        all_stocks = []
-        for pool_stocks in config.CURATED_STOCK_POOLS.values():
-            all_stocks.extend(pool_stocks)
-
-        # 3. 去重返回
-        return list(set(all_stocks))
+        # 2. 从Baostock获取全部纯A股
+        return self.data_source_manager.get_all_stocks()
 
     def is_cache_valid(
         self,
@@ -593,7 +714,7 @@ class AutoDataFetcher:
                     return {"symbol": symbol, "status": "skipped", "reason": "cache_valid"}
 
                 # 随机延迟 0-2秒，避免API限流
-                await asyncio.sleep(random.uniform(0, 2))
+                # await asyncio.sleep(random.uniform(0, 2))  # 加速
 
                 # 带重试的采集
                 result = await self._fetch_with_retry(symbol, start_date, end_date, retry_times)
@@ -699,7 +820,7 @@ class AutoDataFetcher:
                     symbol=symbol,
                     start_date=start_date,
                     end_date=end_date,
-                    adjust="qfq"
+                    adjust=""
                 )
 
                 if result["success"]:
@@ -714,9 +835,12 @@ class AutoDataFetcher:
                     wait_time = (attempt + 1) * 2  # 指数退避: 2, 4, 6秒
                     print(f"⚠️ {symbol} 第{attempt + 1}次网络错误，{wait_time}秒后重试...")
                     await asyncio.sleep(wait_time)
+                elif "空数据" in result.get("error_message", ""):
+                    print(f"{symbol} 返回空数据，跳过")
+                    break
                 elif attempt < retry_times - 1:
                     print(f"⚠️ {symbol} 第{attempt + 1}次失败，{result.get('error_message')}，1秒后重试...")
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(0.1)
 
             except Timeout as e:
                 # 超时异常 - 使用指数退避
@@ -733,7 +857,7 @@ class AutoDataFetcher:
             except Exception as e:
                 print(f"❌ {symbol} 第{attempt + 1}次异常: {e}")
                 if attempt < retry_times - 1:
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(0.1)
 
         return {
             "success": False,

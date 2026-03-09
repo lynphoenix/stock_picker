@@ -40,6 +40,7 @@ class StockDataItem(BaseModel):
     total_days: int = Field(..., description="总交易日")
     available_days: int = Field(..., description="已有数据天数")
     completeness: float = Field(..., description="完整率 %")
+    trading_days: int = Field(0, description="股市交易日")
     missing_days: int = Field(..., description="缺失天数")
 
 
@@ -83,6 +84,7 @@ class StockDetail(BaseModel):
     missing_dates: List[MissingDate] = Field(..., description="缺失日期")
     indicators: Dict[str, IndicatorStatus] = Field(..., description="指标状态")
     data_quality: DataQuality = Field(..., description="数据质量")
+    data: Optional[List[Dict[str, Any]]] = Field(None, description="日线数据")
 
 
 class DataRepairConfig(BaseModel):

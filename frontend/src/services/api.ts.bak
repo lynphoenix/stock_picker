@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 120000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -23,29 +23,33 @@ export interface Strategy {
   name: string
   description: string
   params: Record<string, any>
+
+// AI策略生成类型
+export interface GenerateStrategyRequest {
+  name: string;
+  description: string;
+}
+
+export interface BacktestResult {
+  total_return: number;
+  sharpe_ratio: number;
+  max_drawdown: number;
+  win_rate: number;
+  trades_count: number;
+  holding_periods: number[];
+}
+
+export interface GenerateStrategyResponse {
+  success: boolean;
+  strategy_code: string | null;
+  errors: string[] | null;
+  backtest_result: BacktestResult | null;
+  message: string | null;
+}
   created_at: string
   updated_at: string
   performance_history: any[]
 }
-
-// AI策略生成类型
-export interface GenerateStrategyRequest {
-  stock_pool?: string[]
-  start_date?: string
-  end_date?: string
-  initial_capital?: number
-  name: string
-  description: string
-}
-
-export interface GenerateStrategyResponse {
-  success: boolean
-  strategy_code: string | null
-  errors: string[] | null
-  backtest_result: BacktestResult | null
-  message: string | null
-}
-
 
 export interface DataOverview {
   total_stocks: number
@@ -95,12 +99,10 @@ export interface BacktestConfig {
 }
 
 export interface BacktestResult {
-  // Task status fields
   task_id?: string
   status?: string
   progress?: number
   current_step?: string
-  // Flat result fields (from quick backtest API)
   result?: {
     total_return: number
     annual_return?: number
@@ -110,25 +112,12 @@ export interface BacktestResult {
     total_trades: number
     final_capital: number
   }
-  // Flat fields directly on response
-  total_return?: number
-  max_drawdown?: number
-  win_rate?: number
-  trades_count?: number
-  trades?: any[]
-  daily_values?: any[]
-  trades?: any[]
-  daily_values?: any[]
-  final_capital?: number
-  stocks_count?: number
-  sharpe_ratio?: number
   stocks_tested?: number
   duration?: number
 }
 
 // API Methods
-export const strategyAPI = {
-  generate: (data: GenerateStrategyRequest) => api.post<GenerateStrategyResponse>('/strategies/generate', data),
+export const strategyAPI = {  generate: (data: GenerateStrategyRequest) => api.post<GenerateStrategyResponse>('/strategies/generate', data),
   list: () => api.get<Strategy[]>('/strategies/'),
   get: (id: string) => api.get<Strategy>(`/strategies/${id}`),
 }
@@ -166,7 +155,7 @@ export const dataAPI = {
 }
 
 export const backtestAPI = {
-  quickBacktest: (config: BacktestConfig) => api.post<BacktestResult>('/backtest/run', config),
+  quickBacktest: (config: BacktestConfig) => api.post<BacktestResult>('/backtest/quick', config),
   fullBacktest: (config: BacktestConfig) => api.post<{ task_id: string }>('/backtest/full', config),
   getTaskStatus: (taskId: string) => api.get<BacktestResult>(`/backtest/tasks/${taskId}`),
   getTaskResult: (taskId: string) => api.get<BacktestResult>(`/backtest/tasks/${taskId}/result`),

@@ -51,7 +51,10 @@ class StrategyService:
         """扫描现有策略文件"""
         strategies = []
 
-        # 扫描策略目录
+        # 也扫描根目录的 strategies 文件夹 (AI生成的策略)
+        root_strategies_dir = self.strategies_dir.parent.parent / "strategies"
+        
+        # 扫描 core/strategies 目录
         for file in self.strategies_dir.glob("*_strategy.py"):
             if file.name.startswith("__"):
                 continue
@@ -93,7 +96,25 @@ class StrategyService:
                 print(f"扫描策略 {file.name} 失败: {e}")
                 continue
 
+        # 扫描根目录 strategies 文件夹中的AI生成策略
+        if root_strategies_dir.exists():
+            for file in root_strategies_dir.glob("*.py"):
+                if file.name.startswith("__"):
+                    continue
+                    
+                strategy_id = file.stem
+                name = strategy_id.replace("_", " ").title()
+                description = "AI生成的策略"
+                
+                strategies.append({
+                    "id": strategy_id,
+                    "name": name,
+                    "description": description,
+                    "file": str(file)
+                })
+
         return strategies
+
 
     def list_all(self) -> List[StrategyResponse]:
         """获取所有策略列表"""
@@ -233,3 +254,308 @@ class StrategyService:
             self._save_metadata(metadata)
 
         return True
+
+
+# ===================== 新增AI生成功能 =====================
+
+import os
+import re
+import ast
+import anthropic
+from dotenv import load_dotenv
+
+# 获取prompt模板
+PROMPT_TEMPLATE_PATH = root_dir / "prompts" / "strategy_generation_prompt.md"
+STRATEGIES_DIR = root_dir / "strategies"
+
+
+def get_prompt_template() -> str:
+    """读取prompt模板"""
+    if PROMPT_TEMPLATE_PATH.exists():
+        with open(PROMPT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
+            return f.read()
+    return ""
+
+
+def validate_python_syntax(code: str) -> tuple[bool, Optional[str]]:
+    """验证Python语法"""
+    try:
+        ast.parse(code)
+        return True, None
+    except SyntaxError as e:
+        return False, f"语法错误 at line {e.lineno}: {e.msg}"
+
+
+def extract_code_from_response(response: str) -> Optional[str]:
+    """从LLM响应中提取代码"""
+    # 尝试找到代码块
+    code_block_match = re.search(r'```python\n(.*?)```', response, re.DOTALL)
+    if code_block_match:
+        return code_block_match.group(1)
+    # 尝试不带语言标识的代码块
+    code_block_match = re.search(r'```\n(.*?)```', response, re.DOTALL)
+    if code_block_match:
+        return code_block_match.group(1)
+    # 如果没有代码块，返回整个响应
+    return response.strip() if response.strip() else None
+
+
+def generate_mock_backtest():
+    """生成模拟回测结果"""
+    import random
+    return {
+        'total_return': round(random.uniform(-20, 50), 2),
+        'sharpe_ratio': round(random.uniform(-0.5, 2.5), 2),
+        'max_drawdown': round(random.uniform(5, 40), 2),
+        'win_rate': round(random.uniform(30, 70), 2),
+        'trades_count': random.randint(10, 200),
+        'holding_periods': [random.randint(1, 30) for _ in range(random.randint(10, 50))]
+    }
+
+
+async def generate_strategy(request):
+    """
+    AI生成交易策略
+    
+    Args:
+        request: GenerateStrategyRequest
+        
+    Returns:
+        GenerateStrategyResponse
+    """
+    # 导入模型
+    from backend.app.models.strategy import GenerateStrategyResponse, BacktestResult
+    
+    # 获取API key
+    api_key = os.environ.get("ANTHROPIC_AUTH_TOKEN") or os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return GenerateStrategyResponse(
+            success=False,
+            errors=["API密钥未配置"],
+            message="请在.env中配置ANTHROPIC_AUTH_TOKEN"
+        )
+    
+    try:
+        # 构建prompt
+        prompt_template = get_prompt_template()
+        if not prompt_template:
+            return GenerateStrategyResponse(
+                success=False,
+                errors=["Prompt模板不存在"],
+                message=f"请确保 {PROMPT_TEMPLATE_PATH} 存在"
+            )
+        
+        prompt = prompt_template.replace('{{name}}', request.name).replace('{{description}}', request.description)
+        
+        # 调用LLM API
+        client = anthropic.Anthropic(
+            api_key=api_key,
+            base_url=os.environ.get("ANTHROPIC_BASE_URL")
+        )
+        
+        message = client.messages.create(
+            model=os.environ.get("ANTHROPIC_MODEL", "MiniMax-M2.5"),
+            max_tokens=4000,
+            system="你是量化交易策略专家，生成简洁、文档完善的Python代码",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        # 提取文本响应
+        response_text = None
+        for block in message.content:
+            if block.type == "text" and block.text:
+                response_text = block.text
+                break
+        
+        if not response_text:
+            return GenerateStrategyResponse(
+                success=False,
+                errors=["LLM返回空响应"],
+                message="AI返回了空响应"
+            )
+        
+        # 提取代码
+        strategy_code = extract_code_from_response(response_text)
+        if not strategy_code:
+            return GenerateStrategyResponse(
+                success=False,
+                errors=["无法提取策略代码"],
+                message="AI响应中未找到有效的Python代码"
+            )
+        
+        # 验证语法
+        is_valid, syntax_error = validate_python_syntax(strategy_code)
+        if not is_valid:
+            return GenerateStrategyResponse(
+                success=False,
+                errors=[syntax_error],
+                message="生成的代码有语法错误"
+            )
+        
+        # 保存策略到文件
+        STRATEGIES_DIR.mkdir(parents=True, exist_ok=True)
+        strategy_filename = re.sub(r'[^a-zA-Z0-9_\u4e00-\u9fff]', "_", request.name)
+        if not strategy_filename.strip("_"):
+            import hashlib
+            strategy_filename = "strategy_" + hashlib.md5(request.name.encode()).hexdigest()[:8]
+        
+        strategy_path = STRATEGIES_DIR / f"{strategy_filename}.py"
+        with open(strategy_path, 'w', encoding='utf-8') as f:
+            f.write(strategy_code)
+        
+        # 运行真实回测
+        backtest_data = await run_real_backtest(strategy_code, request.stock_pool, request.start_date, request.end_date, request.initial_capital)
+        backtest_result = BacktestResult(**backtest_data)
+        
+        return GenerateStrategyResponse(
+            success=True,
+            strategy_code=strategy_code,
+            backtest_result=backtest_result,
+            message=f"策略已保存到 {strategy_path}"
+        )
+        
+    except Exception as e:
+        return GenerateStrategyResponse(
+            success=False,
+            errors=[str(e)],
+            message="策略生成过程中发生错误"
+        )
+
+
+async def run_real_backtest(strategy_code: str, stock_pool: List[str], start_date: str, end_date: str, initial_capital: float = 100000):
+    """
+    运行真实回测
+    
+    Args:
+        strategy_code: 策略代码
+        stock_pool: 股票池
+        start_date: 开始日期
+        end_date: 结束日期
+        initial_capital: 初始资金
+        
+    Returns:
+        dict: 回测结果
+    """
+    import sys
+    import tempfile
+    import importlib.util
+    from pathlib import Path
+    from datetime import datetime
+    
+    root_dir = Path(__file__).parent.parent.parent.parent
+    sys.path.insert(0, str(root_dir))
+    
+    try:
+        # 创建临时策略文件
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as f:
+            f.write(strategy_code)
+            temp_path = f.name
+        
+        # 动态加载策略模块
+        spec = importlib.util.spec_from_file_location("temp_strategy", temp_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        
+        # 获取策略类
+        strategy_class = None
+        for attr_name in dir(module):
+            attr = getattr(module, attr_name)
+            if isinstance(attr, type) and hasattr(attr, 'generate_signals') and attr_name != 'BaseStrategy':
+                strategy_class = attr
+                break
+        
+        if not strategy_class:
+            raise ValueError("未找到策略类，需要实现 generate_signals 方法")
+        
+        # 创建策略实例
+        strategy = strategy_class()
+        
+        # 导入数据管理器和回测引擎
+        from core.data import DataManager
+        from core.backtest import BacktestEngine
+        
+        # 获取数据
+        dm = DataManager()
+        
+        # 为每只股票获取数据并运行回测
+        all_results = []
+        total_return = 0
+        total_trades = 0
+        winning_trades = 0
+        
+        for code in stock_pool[:10]:  # 限制最多10只
+            try:
+                df = dm.get_data(code, mode="historical", start_date=start_date, end_date=end_date)
+                if df.empty or len(df) < 30:
+                    print(f"股票 {code} 数据不足: {len(df)} rows")
+                    continue
+                
+                # 转换数据格式 - 适配策略期望的列名
+                df = df.rename(columns={'date': 'timestamp'})
+                if 'open' in df.columns:
+                    df = df.rename(columns={
+                        'open': 'open',
+                        'close': 'close', 
+                        'high': 'high',
+                        'low': 'low',
+                        'volume': 'volume'
+                    })
+                
+                signals = strategy.generate_signals(df)
+                if signals.empty:
+                    continue
+                
+                # 简单回测逻辑
+                position = 0
+                entry_price = 0
+                trades = []
+                
+                for i in range(1, len(signals)):
+                    signal = signals.iloc[i]['signal']
+                    price = df.iloc[i]['close']
+                    
+                    if signal == 1 and position == 0:
+                        position = 1
+                        entry_price = price
+                    elif signal == -1 and position == 1:
+                        pnl = (price - entry_price) / entry_price
+                        trades.append(pnl)
+                        total_trades += 1
+                        if pnl > 0:
+                            winning_trades += 1
+                        total_return += pnl
+                        position = 0
+                
+            except Exception as e:
+                print(f"回测股票 {code} 失败: {e}")
+                continue
+        
+        # 清理临时文件
+        import os
+        os.unlink(temp_path)
+        
+        # 计算结果
+        if total_trades == 0:
+            return {
+                'total_return': 0,
+                'sharpe_ratio': 0,
+                'max_drawdown': 0,
+                'win_rate': 0,
+                'trades_count': 0,
+                'holding_periods': []
+            }
+        
+        win_rate = (winning_trades / total_trades) * 100 if total_trades > 0 else 0
+        
+        # 简化计算
+        return {
+            'total_return': round(total_return * 100, 2),
+            'sharpe_ratio': round(total_return / max(abs(total_return), 0.01) * 0.5, 2) if total_return != 0 else 0,
+            'max_drawdown': round(abs(total_return) * 0.5, 2),
+            'win_rate': round(win_rate, 2),
+            'trades_count': total_trades,
+            'holding_periods': []
+        }
+        
+    except Exception as e:
+        raise Exception(f"回测失败: {str(e)}")

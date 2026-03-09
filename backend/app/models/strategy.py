@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-策略相关数据模型
+策略相关数据模型 - 包含CRUD模型和AI生成模型
 """
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 
+
+# ===================== 原有CRUD模型 =====================
 
 class StrategyBase(BaseModel):
     """策略基础模型"""
@@ -37,24 +39,36 @@ class StrategyResponse(StrategyBase):
         description="历史回测表现"
     )
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "id": "enhanced_multi_factor",
-                "name": "增强多因子策略",
-                "description": "基于10+因子的综合评分选股策略",
-                "params": {
-                    "min_score": 60,
-                    "top_n": 20,
-                    "rebalance_days": 5
-                },
-                "created_at": "2026-01-29T10:00:00",
-                "updated_at": "2026-01-29T10:00:00",
-                "performance_history": []
-            }
-        }
-
 
 class StrategyDetailResponse(StrategyResponse):
     """策略详情响应（包含代码）"""
     code: str = Field(..., description="策略源代码")
+
+
+# ===================== 新增AI生成模型 =====================
+
+class GenerateStrategyRequest(BaseModel):
+    """AI生成策略请求"""
+    description: str = Field(..., description="自然语言策略描述", min_length=10)
+    name: str = Field(..., description="策略名称", min_length=1)
+    stock_pool: Optional[list[str]] = Field(default_factory=lambda: ["000001", "600000"], description="股票池")
+    start_date: Optional[str] = Field("20250101", description="开始日期 YYYYMMDD")
+    end_date: Optional[str] = Field("20251231", description="结束日期 YYYYMMDD")
+    initial_capital: Optional[float] = Field(100000, description="初始资金")
+class BacktestResult(BaseModel):
+    """回测结果"""
+    total_return: float = Field(..., description="总收益率")
+    sharpe_ratio: float = Field(..., description="夏普比率")
+    max_drawdown: float = Field(..., description="最大回撤")
+    win_rate: float = Field(..., description="胜率")
+    trades_count: int = Field(..., description="交易次数")
+    holding_periods: list[int] = Field(default_factory=list, description="持仓周期分布")
+
+
+class GenerateStrategyResponse(BaseModel):
+    """AI生成策略响应"""
+    success: bool = Field(..., description="是否成功")
+    strategy_code: Optional[str] = Field(None, description="生成的策略代码")
+    errors: Optional[list[str]] = Field(None, description="错误列表")
+    backtest_result: Optional[BacktestResult] = Field(None, description="回测结果")
+    message: Optional[str] = Field(None, description="附加消息")
