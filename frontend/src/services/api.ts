@@ -14,6 +14,44 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error)
+
+    // Network errors (no response from server)
+    if (!error.response) {
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        error.message = '请求超时，请检查网络连接后重试'
+      } else if (error.message.includes('Network Error')) {
+        error.message = '网络连接失败，请检查网络设置'
+      } else {
+        error.message = `网络请求失败: ${error.message || '未知错误'}`
+      }
+      return Promise.reject(error)
+    }
+
+    // HTTP error responses (4xx, 5xx)
+    const status = error.response.status
+    const data = error.response.data
+
+    // If server returned a structured error with message/errors, use it
+    if (data && (data.message || data.errors)) {
+      error.message = data.message || (data.errors && data.errors.join(', ')) || `HTTP ${status} 错误`
+    } else if (status === 400) {
+      error.message = '请求参数错误，请检查输入'
+    } else if (status === 401) {
+      error.message = '认证失败，请重新登录'
+    } else if (status === 403) {
+      error.message = '无权限访问'
+    } else if (status === 404) {
+      error.message = '请求的资源不存在'
+    } else if (status === 500) {
+      error.message = '服务器内部错误，请稍后重试'
+    } else if (status === 502 || status === 503) {
+      error.message = '服务暂时不可用，请稍后重试'
+    } else if (status === 504) {
+      error.message = '服务器响应超时'
+    } else {
+      error.message = `请求失败 (HTTP ${status})`
+    }
+
     return Promise.reject(error)
   }
 )

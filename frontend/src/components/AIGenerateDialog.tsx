@@ -16,6 +16,7 @@ export function AIGenerateDialog({ isOpen, onClose, onSuccess }: AIGenerateDialo
   const [initialCapital, setInitialCapital] = useState(100000);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string[] | null>(null);
   const [result, setResult] = useState<GenerateStrategyResponse | null>(null);
 
   if (!isOpen) return null;
@@ -24,6 +25,7 @@ export function AIGenerateDialog({ isOpen, onClose, onSuccess }: AIGenerateDialo
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setErrorDetails(null);
     setResult(null);
 
     try {
@@ -44,10 +46,18 @@ export function AIGenerateDialog({ isOpen, onClose, onSuccess }: AIGenerateDialo
       }
 
       if (!response.data.success) {
-        setError(response.data.errors?.join(', ') || response.data.message || 'Generation failed');
+        // Set main error message
+        setError(response.data.message || '策略生成失败');
+        // Set detailed errors if available
+        if (response.data.errors && response.data.errors.length > 0) {
+          setErrorDetails(response.data.errors);
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      // Network or HTTP errors
+      const errorMessage = err instanceof Error ? err.message : '发生未知错误';
+      setError(errorMessage);
+      setErrorDetails(null);
     } finally {
       setLoading(false);
     }
@@ -57,6 +67,7 @@ export function AIGenerateDialog({ isOpen, onClose, onSuccess }: AIGenerateDialo
     setName('');
     setDescription('');
     setError(null);
+    setErrorDetails(null);
     setResult(null);
     onClose();
   };
@@ -71,28 +82,34 @@ export function AIGenerateDialog({ isOpen, onClose, onSuccess }: AIGenerateDialo
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="strategy-name">策略名称</label>
+            <label htmlFor="strategy-name">
+              策略名称 ({name.length}/100)
+            </label>
             <input
               id="strategy-name"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => setName(e.target.value.slice(0, 100))}
               placeholder="例如：双均线策略"
               required
               disabled={loading}
+              maxLength={100}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="strategy-description">策略描述</label>
+            <label htmlFor="strategy-description">
+              策略描述 ({description.length}/500)
+            </label>
             <textarea
               id="strategy-description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => setDescription(e.target.value.slice(0, 500))}
               placeholder="例如：当 MA5 上穿 MA20 时买入，下穿时卖出"
               required
               disabled={loading}
               rows={3}
+              maxLength={500}
             />
           </div>
 
@@ -144,8 +161,28 @@ export function AIGenerateDialog({ isOpen, onClose, onSuccess }: AIGenerateDialo
           </div>
 
           {error && (
-            <div style={{ color: '#f44336', marginBottom: '16px' }}>
-              {error}
+            <div style={{
+              color: '#f44336',
+              marginBottom: '16px',
+              padding: '12px',
+              backgroundColor: '#ffebee',
+              borderRadius: '4px',
+              border: '1px solid #ffcdd2'
+            }}>
+              <div style={{ fontWeight: 'bold', marginBottom: errorDetails ? '8px' : '0' }}>
+                {error}
+              </div>
+              {errorDetails && errorDetails.length > 0 && (
+                <ul style={{
+                  margin: '0',
+                  paddingLeft: '20px',
+                  fontSize: '0.9em'
+                }}>
+                  {errorDetails.map((detail, index) => (
+                    <li key={index}>{detail}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 

@@ -93,7 +93,7 @@ class StrategyService:
                         "file": str(file)
                     })
             except Exception as e:
-                print(f"扫描策略 {file.name} 失败: {e}")
+                logger.warning(f"Failed to scan strategy {file.name}: {e}")
                 continue
 
         # 扫描根目录 strategies 文件夹中的AI生成策略
@@ -261,10 +261,10 @@ class StrategyService:
 import os
 import re
 import ast
+import random
 import hashlib
 import logging
 import anthropic
-from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
@@ -275,9 +275,6 @@ STRATEGIES_DIR = root_dir / "strategies"
 
 def get_prompt_template() -> str:
     """读取prompt模板"""
-    import logging
-    logger = logging.getLogger(__name__)
-
     try:
         with open(PROMPT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
             return f.read()
@@ -314,7 +311,9 @@ def validate_python_syntax(code: str) -> tuple[bool, Optional[str]]:
         ast.parse(code)
         return True, None
     except SyntaxError as e:
-        return False, f"语法错误 at line {e.lineno}: {e.msg}"
+        error_msg = f"语法错误 at line {e.lineno}: {e.msg}"
+        logger.warning(f"Python syntax validation failed: {error_msg}")
+        return False, error_msg
 
 
 def extract_code_from_response(response: str) -> Optional[str]:
@@ -333,7 +332,6 @@ def extract_code_from_response(response: str) -> Optional[str]:
 
 def generate_mock_backtest():
     """生成模拟回测结果"""
-    import random
     return {
         'total_return': round(random.uniform(-20, 50), 2),
         'sharpe_ratio': round(random.uniform(-0.5, 2.5), 2),
@@ -619,7 +617,7 @@ async def run_real_backtest(strategy_code: str, stock_pool: List[str], start_dat
             try:
                 df = dm.get_data(code, mode="historical", start_date=start_date, end_date=end_date)
                 if df.empty or len(df) < 30:
-                    print(f"股票 {code} 数据不足: {len(df)} rows")
+                    logger.info(f"Insufficient data for stock {code}: {len(df)} rows")
                     continue
                 
                 # 转换数据格式 - 适配策略期望的列名
@@ -657,9 +655,9 @@ async def run_real_backtest(strategy_code: str, stock_pool: List[str], start_dat
                             winning_trades += 1
                         total_return += pnl
                         position = 0
-                
+
             except Exception as e:
-                print(f"回测股票 {code} 失败: {e}")
+                logger.warning(f"Backtest failed for stock {code}: {e}")
                 continue
         
         # 清理临时文件
@@ -688,6 +686,7 @@ async def run_real_backtest(strategy_code: str, stock_pool: List[str], start_dat
             'trades_count': total_trades,
             'holding_periods': []
         }
-        
+
     except Exception as e:
+        logger.error(f"Backtest execution failed: {e}", exc_info=True)
         raise Exception(f"回测失败: {str(e)}")

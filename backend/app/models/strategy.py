@@ -49,8 +49,8 @@ class StrategyDetailResponse(StrategyResponse):
 
 class GenerateStrategyRequest(BaseModel):
     """AI生成策略请求"""
-    description: str = Field(..., description="自然语言策略描述", min_length=10)
-    name: str = Field(..., description="策略名称", min_length=1)
+    description: str = Field(..., description="自然语言策略描述", min_length=10, max_length=500)
+    name: str = Field(..., description="策略名称", min_length=1, max_length=100)
     stock_pool: Optional[list[str]] = Field(default_factory=lambda: ["000001", "600000"], description="股票池")
     start_date: Optional[str] = Field("20250101", description="开始日期 YYYYMMDD")
     end_date: Optional[str] = Field("20251231", description="结束日期 YYYYMMDD")
