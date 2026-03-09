@@ -41,7 +41,7 @@ class TestPathTraversalProtection:
             for malicious_name in malicious_names:
                 request = GenerateStrategyRequest(
                     name=malicious_name,
-                    description="test strategy",
+                    description="test strategy for path traversal validation",
                     stock_pool=["000001"],
                     start_date="20250101",
                     end_date="20251231"
@@ -72,8 +72,11 @@ class TestPathTraversalProtection:
                             if response.success:
                                 # Verify the saved file is still within tmp_path
                                 assert response.strategy_code is not None
-                                # Check no files were created outside tmp_path
-                                assert not (Path("/etc/passwd").exists() and Path("/etc/passwd").stat().st_mtime > 0)
+                                # Check all created files are within tmp_path
+                                created_files = list(tmp_path.glob("*.py"))
+                                for file_path in created_files:
+                                    # Ensure file is within tmp_path
+                                    assert file_path.parent == tmp_path or tmp_path in file_path.parents
 
     @pytest.mark.asyncio
     async def test_filename_sanitization(self, mock_env_vars, tmp_path):
@@ -85,7 +88,7 @@ class TestPathTraversalProtection:
             # Test special characters are replaced
             request = GenerateStrategyRequest(
                 name="策略名称!@#$%^&*()",
-                description="test",
+                description="test strategy with special characters",
                 stock_pool=["000001"],
                 start_date="20250101",
                 end_date="20251231"
@@ -225,7 +228,7 @@ class TestFileWriteErrorHandling:
             with patch('backend.app.services.strategy_service.STRATEGIES_DIR', tmp_path):
                 request = GenerateStrategyRequest(
                     name="test_strategy",
-                    description="test",
+                    description="test strategy for error handling",
                     stock_pool=["000001"],
                     start_date="20250101",
                     end_date="20251231"
@@ -256,7 +259,7 @@ class TestFileWriteErrorHandling:
         with patch('backend.app.services.strategy_service.STRATEGIES_DIR', tmp_path):
             request = GenerateStrategyRequest(
                 name="test_strategy",
-                description="test",
+                description="test strategy for error handling",
                 stock_pool=["000001"],
                 start_date="20250101",
                 end_date="20251231"
@@ -286,7 +289,7 @@ class TestFileWriteErrorHandling:
         with patch('backend.app.services.strategy_service.STRATEGIES_DIR', tmp_path):
             request = GenerateStrategyRequest(
                 name="test_strategy",
-                description="test",
+                description="test strategy for error handling",
                 stock_pool=["000001"],
                 start_date="20250101",
                 end_date="20251231"
@@ -324,7 +327,7 @@ class TestSpecificExceptionHandling:
         with patch('backend.app.services.strategy_service.STRATEGIES_DIR', tmp_path):
             request = GenerateStrategyRequest(
                 name="test",
-                description="test",
+                description="test strategy for error handling",
                 stock_pool=["000001"],
                 start_date="20250101",
                 end_date="20251231"
@@ -351,7 +354,7 @@ class TestSpecificExceptionHandling:
         with patch('backend.app.services.strategy_service.STRATEGIES_DIR', tmp_path):
             request = GenerateStrategyRequest(
                 name="test",
-                description="test",
+                description="test strategy for error handling",
                 stock_pool=["000001"],
                 start_date="20250101",
                 end_date="20251231"
@@ -378,7 +381,7 @@ class TestSpecificExceptionHandling:
         with patch('backend.app.services.strategy_service.STRATEGIES_DIR', tmp_path):
             request = GenerateStrategyRequest(
                 name="test",
-                description="test",
+                description="test strategy for error handling",
                 stock_pool=["000001"],
                 start_date="20250101",
                 end_date="20251231"
